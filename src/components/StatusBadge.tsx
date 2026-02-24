@@ -1,5 +1,5 @@
 interface StatusBadgeProps {
-  status: 'active' | 'inactive' | 'monitoring' | 'alert' | 'approved' | 'pending' | 'rejected' | 'success' | 'failed' | 'in_progress' | string;
+  status: 'active' | 'inactive' | 'monitoring' | 'alert' | 'approved' | 'pending' | 'rejected' | 'success' | 'failed' | 'in_progress' | 'draft' | 'staging' | 'deployed' | 'at_risk' | 'blocked' | string;
   children: string;
 }
 
@@ -15,6 +15,11 @@ export function StatusBadge({ status, children }: StatusBadgeProps) {
     success: 'badge-success',
     failed: 'badge-failed',
     in_progress: 'badge-in-progress',
+    draft: 'badge-pending',
+    staging: 'badge-monitoring',
+    deployed: 'badge-active',
+    at_risk: 'badge-alert',
+    blocked: 'badge-rejected',
   };
 
   const badgeClass = statusClasses[status] || 'badge-inactive';
