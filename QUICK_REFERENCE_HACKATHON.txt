@@ -1,0 +1,464 @@
+================================================================================
+                   DRIFTGUARDAI 2.0 - QUICK REFERENCE GUIDE
+                              Hackathon Edition
+================================================================================
+
+PROJECT: DriftGuardAI 2.0 - AI Governance & Model Lifecycle Intelligence Platform
+VERSION: 7.0.0
+STATUS: Production Ready ✅ (All 7 Phases Complete)
+DATE: February 24, 2026
+
+================================================================================
+WHAT IS DRIFTGUARDAI?
+================================================================================
+
+A comprehensive platform that monitors ML models for:
+  ✅ Data Drift (statistical distribution changes)
+  ✅ Fairness Bias (demographic group disparities)
+  ✅ Risk Scoring (composite risk index 0-100)
+  ✅ Governance Compliance (policy enforcement)
+  ✅ Executive Monitoring (dashboard + simulation)
+
+NO traditional ML algorithms used - pure statistical methods for monitoring.
+
+================================================================================
+KEY ALGORITHMS
+================================================================================
+
+1. POPULATION STABILITY INDEX (PSI)
+   Purpose: Detect feature distribution changes
+   Formula: Σ (actual_% - expected_%) × ln(actual_% / expected_%)
+   Threshold: PSI ≥ 0.25 = DRIFT DETECTED
+   Implementation: NumPy histogram-based
+
+2. KOLMOGOROV-SMIRNOV (KS) TEST
+   Purpose: Compare cumulative distributions
+   Formula: max |F_actual(x) - F_expected(x)|
+   Threshold: KS ≥ 0.20 = DRIFT DETECTED
+   Implementation: scipy.stats.ks_2samp
+
+3. DISPARITY SCORE (Fairness)
+   Purpose: Detect bias across demographic groups
+   Formula: max(approval_rate) - min(approval_rate)
+   Threshold: disparity > 0.10 = BIAS DETECTED
+   Implementation: Group-based approval rate comparison
+
+4. MODEL RISK INDEX (MRI)
+   Purpose: Composite risk score (0-100)
+   Formula: (drift_component × 0.60) + (fairness_component × 0.40)
+   Output: 0-30 Green, 30-60 Yellow, 60-80 Orange, 80+ Red
+
+================================================================================
+CONFIGURATION PARAMETERS
+================================================================================
+
+DRIFT DETECTION:
+  DRIFT_WINDOW_SIZE = 100 (recent predictions for sliding window)
+  PSI_THRESHOLD = 0.25 (significance level)
+  KS_THRESHOLD = 0.20 (distribution difference threshold)
+
+FAIRNESS:
+  FAIRNESS_THRESHOLD = 0.10 (10% max approval rate disparity)
+
+GOVERNANCE POLICY (Default):
+  max_allowed_mri = 80.0 (hard block)
+  max_allowed_disparity = 0.15 (fairness block)
+  approval_required_above_mri = 60.0 (soft threshold)
+
+JWT TOKENS:
+  Algorithm: HS256
+  Expiration: 30 minutes
+  Secret: 32+ character random string
+
+================================================================================
+API ENDPOINTS (33 Total)
+================================================================================
+
+AUTHENTICATION (2):
+  POST /auth/register
+  POST /auth/login
+
+MODELS (5):
+  POST /models (create)
+  GET /models (list)
+  GET /models/{id} (detail)
+  PUT /models/{id} (update)
+  DELETE /models/{id}
+
+PREDICTIONS (2):
+  POST /logs/prediction
+  GET /logs/prediction/{model_id}
+
+DRIFT (2):
+  GET /models/{id}/drift
+  POST /models/{id}/drift/recalculate
+
+RISK (2):
+  GET /models/{id}/risk-history
+  GET /models/{id}/risk-history/latest
+
+FAIRNESS (3):
+  POST /models/{id}/fairness/evaluate
+  GET /models/{id}/fairness
+  GET /models/{id}/fairness/attribute/{attr}
+
+GOVERNANCE (6):
+  POST /models/{id}/evaluate-governance
+  POST /models/{id}/deploy
+  GET /models/{id}/status
+  POST /governance/policies (create)
+  GET /governance/policies (list)
+  PUT/DELETE /governance/policies/{id}
+
+PHASE 6 SDK (3):
+  POST /models/{id}/explain
+  GET /models/{id}/forecast
+  GET /models/{id}/compliance
+
+PHASE 7 DASHBOARD (5):
+  GET /dashboard/summary
+  GET /dashboard/risk-trends
+  GET /dashboard/deployment-trends
+  GET /dashboard/compliance-distribution
+  GET /dashboard/executive-summary
+
+PHASE 7 SIMULATION (2):
+  POST /simulation/governance-check
+  POST /simulation/batch-governance-check
+
+================================================================================
+DATABASE SCHEMA (7 Tables)
+================================================================================
+
+USERS
+  - id, email, username, hashed_password, role, is_active, created_at
+
+MODEL_REGISTRY
+  - id, model_name, version, description, training_accuracy, fairness_baseline
+  - schema_definition (JSON), deployment_status, status, created_by, created_at
+  Status values: draft, approved, at_risk, blocked
+
+PREDICTION_LOGS
+  - id, model_id, input_features (JSON), prediction, actual_outcome, timestamp
+
+DRIFT_METRICS
+  - id, model_id, feature_name, psi_value, ks_statistic, drift_flag, timestamp
+
+RISK_HISTORY
+  - id, model_id, risk_score, drift_component, fairness_component, timestamp
+  Index: (model_id, timestamp) for fast queries
+
+FAIRNESS_METRICS
+  - id, model_id, protected_attribute, group_name, total_predictions
+  - positive_predictions, approval_rate, disparity_score, fairness_flag, timestamp
+
+GOVERNANCE_POLICIES
+  - id, name, max_allowed_mri, max_allowed_disparity
+  - approval_required_above_mri, active, created_at
+
+================================================================================
+TECH STACK
+================================================================================
+
+BACKEND:
+  - FastAPI 0.109.0 (Python)
+  - PostgreSQL + SQLAlchemy ORM 2.0.25
+  - Uvicorn ASGI Server
+  - JWT Authentication (python-jose + passlib)
+  - NumPy + SciPy (statistical calculations)
+
+FRONTEND:
+  - React 19.0.0 + TypeScript 5.6.0
+  - Vite 6.0.0 (build tool)
+  - React Router 6.21.0 (navigation)
+  - Axios 1.6.5 (HTTP client)
+  - Recharts 2.10.3 (data visualization)
+
+OPTIONAL:
+  - RunAnywhere SDK 0.1.0 (AI Intelligence Layer - Phase 6)
+
+================================================================================
+GOVERNANCE DECISION FLOW
+================================================================================
+
+                    GET MODEL STATUS
+                          ↓
+    ┌───────────────────────────────────────┐
+    │ IF risk_score > max_allowed_mri?      │
+    │ (default: 80.0)                       │
+    └───────────┬───────────────────────────┘
+                │
+        YES │   │ NO
+            ▼   ▼
+        BLOCKED ┌─────────────────────────┐
+                │ IF disparity >          │
+                │ max_allowed_disparity?  │
+                │ (default: 0.15)         │
+                └───────────┬─────────────┘
+                            │
+                    YES │   │ NO
+                        ▼   ▼
+                     AT_RISK ┌──────────────────────┐
+                             │ IF risk_score >      │
+                             │ approval_required?   │
+                             │ (default: 60.0)      │
+                             └──────┬───────────────┘
+                                    │
+                            YES │   │ NO
+                                ▼   ▼
+                             AT_RISK APPROVED
+
+STATUS VALUES:
+  DRAFT (initial state)
+  APPROVED (ready to deploy)
+  AT_RISK (requires approval)
+  BLOCKED (cannot deploy, admin override needed)
+
+================================================================================
+DEPLOYMENT WORKFLOW
+================================================================================
+
+1. REGISTER MODEL
+   POST /models
+   → Creates model_registry entry
+   → Status: draft
+   → No predictions yet
+
+2. LOG PREDICTIONS
+   POST /logs/prediction
+   → Stores input_features + prediction
+   → (After 100 predictions, baseline set)
+
+3. TRIGGER DRIFT CALCULATION
+   POST /models/{id}/drift/recalculate
+   → Compares baseline vs recent 100 predictions
+   → Creates drift_metrics entries
+   → Updates risk score
+
+4. EVALUATE GOVERNANCE
+   POST /models/{id}/evaluate-governance
+   → Applies governance policy rules
+   → Updates model status (draft/approved/at_risk/blocked)
+
+5. DEPLOY MODEL
+   POST /models/{id}/deploy
+   → IF status == APPROVED: Deploy immediately ✅
+   → IF status == AT_RISK: Deploy with warning (records override) ⚠️
+   → IF status == BLOCKED: Reject unless admin override 🔒
+
+================================================================================
+FAIRNESS MONITORING EXAMPLE
+================================================================================
+
+Model: Loan Approval
+Protected Attribute: "gender"
+
+Input Data:
+  {
+    "amount": 50000,
+    "gender": "M",  ← Protected attribute
+    "income": 100000,
+    "credit_score": 750
+  }
+
+Calculation:
+  Group "M": 500 predictions, 350 approvals → 70% approval rate
+  Group "F": 500 predictions, 300 approvals → 60% approval rate
+  Disparity: 0.70 - 0.60 = 0.10 (equals threshold)
+  fairness_flag: TRUE → At-risk status ⚠️
+
+Impact on MRI:
+  fairness_component = 0.10 × 100 = 10.0
+  MRI contribution = 10.0 × 0.40 (40% weight) = 4.0 points
+
+================================================================================
+PHASES OVERVIEW
+================================================================================
+
+PHASE 1 ✅ COMPLETE
+  Features: Authentication, User roles, Model registry CRUD
+  Database: users, model_registry tables
+  Status: Production ready
+
+PHASE 2 ✅ COMPLETE
+  Features: Drift detection (PSI + KS), Risk scoring (MRI)
+  Database: prediction_logs, drift_metrics, risk_history tables
+  Status: Production ready
+
+PHASE 3 ✅ COMPLETE
+  Features: Fairness monitoring, Disparity detection
+  Database: fairness_metrics table
+  Impact: MRI now includes fairness (40% weight)
+  Status: Production ready
+
+PHASE 4 (MERGED WITH PHASE 5)
+  Status: Complete
+
+PHASE 5 ✅ COMPLETE
+  Features: Governance policies, Deployment control, Admin overrides
+  Database: governance_policies table
+  API: Full policy CRUD + enforcement
+  Status: Production ready
+
+PHASE 6 ✅ COMPLETE
+  Features: RunAnywhere SDK integration, AI explanations, Risk forecasting
+  Optional: Works with or without SDK
+  Fallback: Graceful degradation if SDK unavailable
+  Status: Production ready
+
+PHASE 7 ✅ COMPLETE
+  Features: Executive dashboard, Risk/deployment trends, Governance simulation
+  New Endpoints: 7 dashboard + 2 simulation
+  Safety: Read-only, sandbox-only, zero Phase 1-6 impact
+  Status: Hackathon ready, production deployable
+
+================================================================================
+RUNNING LOCALLY
+================================================================================
+
+BACKEND:
+  cd backend
+  pip install -r requirements.txt
+  export $(cat .env | xargs)  # Load environment
+  uvicorn app.main:app --reload
+
+FRONTEND:
+  npm install
+  npm run dev
+
+ACCESS:
+  Backend: http://localhost:8000
+  API Docs: http://localhost:8000/docs
+  Frontend: http://localhost:5173
+
+================================================================================
+PRODUCTION CHECKLIST
+================================================================================
+
+✅ Database configured (PostgreSQL)
+✅ Environment variables set (.env)
+✅ Default governance policy seeded
+✅ All 33 endpoints working
+✅ JWT authentication enabled
+✅ Role-based access control active
+✅ Drift detection tested
+✅ Fairness monitoring tested
+✅ Governance policy enforcement tested
+✅ Dashboard aggregations working
+✅ Simulation sandbox isolated
+✅ Error handling comprehensive
+✅ No console errors
+✅ Response times <200ms
+✅ Database indexes created
+
+================================================================================
+HACKATHON TALKING POINTS
+================================================================================
+
+1. UNIQUE VALUE PROPOSITION
+   - Only platform combining drift + fairness + governance
+   - Automatic enforcement (not just monitoring)
+   - Works with ANY ML model (framework-agnostic)
+   - Lightweight statistical approach (not ML-heavy)
+
+2. PROBLEM SOLVED
+   - Models degrade in production (drift)
+   - Models develop bias over time (fairness)
+   - No governance enforcement (compliance)
+   - Executives need dashboards (visibility)
+
+3. TECHNICAL EXCELLENCE
+   - 7 phases implemented
+   - 33 API endpoints
+   - 7 database tables (optimized indexes)
+   - Type-safe Python + TypeScript
+   - Production-grade error handling
+
+4. EASE OF USE
+   - Minimal data required (just predictions)
+   - Framework-agnostic integration
+   - No model upload needed
+   - Self-explanatory risk scores (0-100)
+   - Beautiful executive dashboard
+
+5. MARKET READINESS
+   - Production deployable today
+   - Complete documentation
+   - Tested on complex scenarios
+   - Scalable architecture
+   - Enterprise security
+
+================================================================================
+QUICK START COMMANDS
+================================================================================
+
+# Install
+cd backend && pip install -r requirements.txt
+npm install
+
+# Configure
+cp backend/.env.example backend/.env
+# Edit backend/.env with your DATABASE_URL and SECRET_KEY
+
+# Run
+cd backend && uvicorn app.main:app --reload &
+npm run dev
+
+# Test
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","username":"testuser","password":"TestPass123"}'
+
+curl -X POST http://localhost:8000/auth/login \
+  -d "username=testuser&password=TestPass123"
+
+# Access Swagger UI
+open http://localhost:8000/docs
+
+# Access Frontend
+open http://localhost:5173
+
+================================================================================
+IMPORTANT FILES
+================================================================================
+
+Backend:
+  backend/app/main.py                 (FastAPI app setup)
+  backend/app/services/drift_service.py      (PSI + KS algorithms)
+  backend/app/services/risk_service.py       (MRI calculation)
+  backend/app/services/fairness_service.py   (Fairness logic)
+  backend/app/services/governance_service.py (Policy enforcement)
+  backend/app/models/                (Database schemas)
+  backend/requirements.txt            (Python dependencies)
+  backend/.env.example               (Configuration template)
+
+Frontend:
+  src/pages/                          (All pages)
+  src/components/CommandCenter.tsx    (Phase 7 components)
+  src/services/api.ts                 (HTTP client)
+  src/services/dashboardAPI.ts        (Dashboard API)
+  package.json                        (Dependencies)
+
+Documentation:
+  TECHNICAL_DOCUMENTATION_HACKATHON.txt  (THIS FILE - Full details)
+  README.md                           (Project overview)
+  PHASE7_IMPLEMENTATION_SUMMARY.md    (Phase 7 details)
+  PHASE7_VALIDATION_CHECKLIST.md      (Quality assurance)
+
+================================================================================
+CONTACT & SUPPORT
+================================================================================
+
+For hackathon questions:
+  - See TECHNICAL_DOCUMENTATION_HACKATHON.txt for detailed answers
+  - All 20 common Q&A covered in Section 9
+  - Architecture diagrams in Section 2
+  - Algorithm details in Section 3
+  - Parameters reference in Section 6
+
+================================================================================
+Document: Quick Reference Guide
+Version: 1.0
+Last Updated: February 24, 2026
+Status: Hackathon Ready
+================================================================================

@@ -1,0 +1,2621 @@
+================================================================================
+                    DRIFTGUARDAI 2.0 - COMPLETE TECHNICAL DOCUMENTATION
+                          Hackathon Edition - February 24, 2026
+================================================================================
+
+This document contains comprehensive technical specifications, ML algorithms,
+parameters, architecture, and answers to all technical hackathon questions.
+
+================================================================================
+SECTION 1: PROJECT OVERVIEW
+================================================================================
+
+PROJECT NAME: DriftGuardAI 2.0
+PURPOSE: AI Governance and Model Lifecycle Intelligence Platform
+VERSION: 7.0.0
+DEPLOYMENT STATUS: Production Ready
+IMPLEMENTATION DATE: February 24, 2026
+
+PHASES IMPLEMENTED: 7/7 COMPLETE
+  - Phase 1: Authentication & Model Registry ✅
+  - Phase 2: Drift Detection & Risk Analysis ✅
+  - Phase 3: Fairness Monitoring ✅
+  - Phase 4: Governance Foundations (Merged with Phase 5)
+  - Phase 5: Governance Policy & Deployment Control ✅
+  - Phase 6: RunAnywhere SDK Intelligence Layer ✅
+  - Phase 7: Executive Command Center + Simulation ✅
+
+================================================================================
+SECTION 2: ARCHITECTURE OVERVIEW
+================================================================================
+
+2.1 TECHNOLOGY STACK
+-------------------
+
+BACKEND:
+  - Framework: FastAPI 0.109.0 (Python)
+  - Database: PostgreSQL (SQLAlchemy ORM 2.0.25)
+  - Authentication: JWT + python-jose + passlib/bcrypt
+  - API Documentation: Swagger UI (built-in FastAPI)
+  - Server: Uvicorn 0.27.0
+
+FRONTEND:
+  - Framework: React 19.0.0 + TypeScript 5.6.0
+  - Build Tool: Vite 6.0.0
+  - Routing: React Router DOM 6.21.0
+  - HTTP Client: Axios 1.6.5
+  - Charting: Recharts 2.10.3
+
+ML/STATISTICAL LIBRARIES:
+  - NumPy 1.26.3 (Numerical computing)
+  - SciPy 1.11.4 (Statistical tests)
+  - scikit-learn compatible interfaces
+
+ADDITIONAL:
+  - RunAnywhere SDK 0.1.0 (AI Intelligence Layer)
+  - CORS Middleware (FastAPI)
+  - Pydantic 2.5.3 (Data validation)
+
+2.2 SYSTEM ARCHITECTURE
+-----------------------
+
+┌─────────────────────────────────────────────────────────────────┐
+│                        FRONTEND (React/TypeScript)              │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ Pages: LoginPage, DashboardPage, ModelDetailPage, etc.  │   │
+│  │ Services: api.ts, dashboardAPI.ts                       │   │
+│  │ Components: Sidebar, Navbar, CommandCenter             │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└────────────────────┬────────────────────────────────────────────┘
+                     │ HTTP/REST (Axios)
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      BACKEND (FastAPI)                          │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ API LAYER (app/api/)                                    │   │
+│  │  ├─ auth.py          (JWT authentication)              │   │
+│  │  ├─ model_registry   (Model CRUD)                      │   │
+│  │  ├─ logs.py          (Prediction logging)              │   │
+│  │  ├─ drift.py         (Drift calculation)               │   │
+│  │  ├─ risk.py          (Risk scoring)                    │   │
+│  │  ├─ fairness.py      (Fairness evaluation)             │   │
+│  │  ├─ governance.py    (Governance policy)               │   │
+│  │  ├─ phase6.py        (SDK intelligence)                │   │
+│  │  ├─ dashboard.py     (Executive dashboard)             │   │
+│  │  └─ simulation.py    (Governance testing)              │   │
+│  └──────────────────────┬──────────────────────────────────┘   │
+│  ┌──────────────────────▼──────────────────────────────────┐   │
+│  │ SERVICE LAYER (app/services/)                           │   │
+│  │  ├─ auth_service.py                                     │   │
+│  │  ├─ model_registry_service.py                           │   │
+│  │  ├─ drift_service.py      (PSI, KS statistics)          │   │
+│  │  ├─ risk_service.py       (MRI calculation)             │   │
+│  │  ├─ fairness_service.py   (Disparity detection)         │   │
+│  │  ├─ governance_service.py (Policy evaluation)           │   │
+│  │  ├─ dashboard_service.py  (Read-only aggregation)       │   │
+│  │  └─ phase6/               (RunAnywhere client)          │   │
+│  └──────────────────────┬──────────────────────────────────┘   │
+│  ┌──────────────────────▼──────────────────────────────────┐   │
+│  │ DATA LAYER (app/models/ + app/database/)                │   │
+│  │  ├─ User.py                                             │   │
+│  │  ├─ ModelRegistry.py                                    │   │
+│  │  ├─ PredictionLog.py                                    │   │
+│  │  ├─ DriftMetric.py                                      │   │
+│  │  ├─ RiskHistory.py                                      │   │
+│  │  ├─ FairnessMetric.py                                   │   │
+│  │  └─ GovernancePolicy.py                                 │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└────────────────────┬────────────────────────────────────────────┘
+                     │ SQLAlchemy ORM
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    DATABASE (PostgreSQL)                        │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ Tables:                                                 │   │
+│  │  - users                                                │   │
+│  │  - model_registry                                       │   │
+│  │  - prediction_logs                                      │   │
+│  │  - drift_metrics (indexed: model_id, timestamp)         │   │
+│  │  - risk_history (indexed: model_id, timestamp)          │   │
+│  │  - fairness_metrics (indexed: model_id, timestamp)      │   │
+│  │  - governance_policies                                  │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+
+================================================================================
+SECTION 3: ML ALGORITHMS & STATISTICAL METHODS
+================================================================================
+
+3.1 DRIFT DETECTION (Phase 2)
+----------------------------
+
+ALGORITHM 1: Population Stability Index (PSI)
+
+Mathematical Formula:
+  PSI = Σ (actual_% - expected_%) × ln(actual_% / expected_%)
+  
+  Where:
+    - actual_%   = percentage of data in bin (production data)
+    - expected_% = percentage of data in bin (baseline data)
+    - ln()       = natural logarithm
+    - Σ          = sum across all bins
+
+Implementation: backend/app/services/drift_service.py:12-43
+
+def calculate_psi(expected: np.ndarray, actual: np.ndarray, bins: int = 10) -> float:
+    - Input:  Two numpy arrays (baseline and production distributions)
+    - Bins:   10 (default, creates equal-width histogram bins)
+    - Process:
+      1. Create breakpoints: np.linspace(min, max, bins + 1)
+      2. Histogram: np.histogram(data, bins=breakpoints)
+      3. Normalize: (counts + 1e-6) / (total + bins*1e-6)
+         (Small epsilon added to avoid division by zero)
+      4. Calculate: (actual_% - expected_%) × ln(actual_% / expected_%)
+      5. Sum all contributions
+    - Output: Float PSI value (0 to infinity)
+
+INTERPRETATION:
+  PSI < 0.10     → No significant change (stable)
+  0.10 ≤ PSI < 0.25 → Moderate change (monitored)
+  PSI ≥ 0.25     → Significant change (DRIFT DETECTED) ⚠️
+
+CONFIGURATION:
+  PSI_THRESHOLD = 0.25 (from .env)
+  If PSI >= 0.25, drift_flag = TRUE
+
+---
+
+ALGORITHM 2: Kolmogorov-Smirnov (KS) Test
+
+Mathematical Formula:
+  KS = max |F_expected(x) - F_actual(x)|
+  
+  Where:
+    - F_expected(x) = CDF of baseline distribution
+    - F_actual(x)   = CDF of production distribution
+    - max           = maximum vertical distance between curves
+
+Implementation: backend/app/services/drift_service.py:46-58
+
+def calculate_ks_statistic(expected: np.ndarray, actual: np.ndarray) -> float:
+    - Input:  Two numpy arrays
+    - Process: scipy.stats.ks_2samp(expected, actual)
+    - Output: Float between 0 and 1
+
+INTERPRETATION:
+  KS ≈ 0.0  → Distributions are identical
+  KS ≈ 0.1  → Distributions are similar
+  KS ≈ 0.2  → Some difference (THRESHOLD)
+  KS > 0.3  → Distributions are significantly different
+
+CONFIGURATION:
+  KS_THRESHOLD = 0.20 (from .env)
+  If KS >= 0.20, drift_flag = TRUE
+
+---
+
+DRIFT DETECTION WORKFLOW:
+
+1. BASELINE COLLECTION:
+   - First 100 prediction logs for a model
+   - Used as "expected" distribution
+   - Extracted from: backend/app/services/drift_service.py:61-87
+
+2. RECENT DATA WINDOW:
+   - Last N recent predictions
+   - Configuration: DRIFT_WINDOW_SIZE = 100
+   - Extracted as "actual" distribution
+
+3. FEATURE MONITORING:
+   - Automatically detects all features from prediction_logs
+   - Also monitors prediction distribution itself
+   - Per-feature PSI and KS calculated
+
+4. COMBINED DRIFT FLAG:
+   - drift_flag = (PSI >= 0.25) OR (KS >= 0.20)
+   - If TRUE: Model marked as drifting
+
+5. TRIGGER POINT:
+   - Called when: POST /models/{model_id}/drift/recalculate
+   - Automatically called after: prediction logging
+   - Creates DriftMetric record in database
+
+EXAMPLE CALCULATION:
+  Baseline predictions: [0.1, 0.2, 0.15, 0.3, 0.25, ...]  (100 samples)
+  Recent predictions:   [0.5, 0.6, 0.55, 0.7, 0.65, ...]  (100 samples)
+  
+  PSI Result: 0.35 (≥ 0.25 → DRIFT DETECTED)
+  KS Result:  0.45 (≥ 0.20 → DRIFT DETECTED)
+  drift_flag: TRUE
+
+
+3.2 RISK SCORING - MODEL RISK INDEX (MRI) (Phase 2-3)
+------------------------------------------------------
+
+PHASE 2 FORMULA (Legacy):
+  risk_score = (avg_psi * 40) + (avg_ks * 30) + (drift_flags_count * 30)
+  Normalized to 0-100
+
+PHASE 3 FORMULA (Current):
+  
+  DRIFT COMPONENT:
+    drift_component = ((avg_psi * 60) + (avg_ks * 40)) / 1.6
+    Normalized to 0-100 range
+
+  FAIRNESS COMPONENT:
+    fairness_component = disparity_score * 100
+    Ranges from 0-100
+
+  FINAL MRI (Model Risk Index):
+    MRI = (drift_component * 0.6) + (fairness_component * 0.4)
+    
+    Where:
+      - 0.6 = 60% weight for drift risk
+      - 0.4 = 40% weight for fairness risk
+      - Final range: 0-100
+
+Implementation: backend/app/services/risk_service.py:29-58
+
+CALCULATION STEPS:
+  1. Get last 50 drift metrics for model
+  2. Calculate: avg_psi, avg_ks
+  3. drift_component = min(100, ((avg_psi * 60) + (avg_ks * 40)) / 1.6)
+  4. Get latest fairness_metric
+  5. fairness_component = min(100, disparity_score * 100)
+  6. MRI = (drift_component * 0.6) + (fairness_component * 0.4)
+  7. Clamp to [0, 100]
+
+RISK LEVELS:
+  MRI < 30    → Low Risk (✅ Green)
+  MRI 30-60   → Moderate Risk (⚠️ Yellow)
+  MRI 60-80   → High Risk (🔴 Orange)
+  MRI > 80    → Critical Risk (🔴🔴 Red)
+
+STORAGE:
+  - Stored in risk_history table
+  - Includes breakdown: drift_component, fairness_component
+  - Timestamp indexed for historical tracking
+
+EXAMPLE MRI CALCULATION:
+  avg_psi = 0.30
+  avg_ks = 0.25
+  disparity_score = 0.12 (12% approval rate difference)
+  
+  drift_component = ((0.30 * 60) + (0.25 * 40)) / 1.6
+                  = (18 + 10) / 1.6
+                  = 28 / 1.6
+                  = 17.5
+  
+  fairness_component = 0.12 * 100 = 12
+  
+  MRI = (17.5 * 0.6) + (12 * 0.4)
+      = 10.5 + 4.8
+      = 15.3
+  
+  INTERPRETATION: Low Risk ✅
+
+
+3.3 FAIRNESS MONITORING (Phase 3)
+---------------------------------
+
+ALGORITHM: Protected Attribute Group Disparity
+
+Goal: Detect bias in model decisions across demographic groups
+
+Mathematical Formula:
+  disparity_score = max(approval_rate_group_A, approval_rate_group_B, ...)
+                    - min(approval_rate_group_A, approval_rate_group_B, ...)
+
+Implementation: backend/app/services/fairness_service.py:10-114
+
+WORKFLOW:
+
+1. FEATURE EXTRACTION:
+   - Protected attribute specified by user (e.g., "gender", "age_group")
+   - Extracted from prediction_log.input_features JSON
+   
+2. GROUP SEGMENTATION:
+   - Partition all predictions by protected attribute value
+   - Example groups for "gender": ["M", "F", "Other"]
+   
+3. APPROVAL RATE CALCULATION (per group):
+   - total_predictions_group = count of predictions
+   - positive_predictions_group = count where prediction > 0.5
+   - approval_rate = positive_predictions_group / total_predictions_group
+   
+4. DISPARITY COMPUTATION:
+   - Find max and min approval rates across groups
+   - disparity = max_rate - min_rate
+   
+5. FAIRNESS FLAG DETERMINATION:
+   - fairness_flag = (disparity > FAIRNESS_THRESHOLD)
+   - Configuration: FAIRNESS_THRESHOLD = 0.10 (10% difference)
+
+METRICS STORED (per group):
+  - protected_attribute: Name of attribute (e.g., "gender")
+  - group_name: Value of attribute for group (e.g., "M", "F")
+  - total_predictions: Count of predictions in group
+  - positive_predictions: Count where prediction > 0.5
+  - approval_rate: Positive / total (decimal 0.0-1.0)
+  - disparity_score: max - min across all groups
+  - fairness_flag: TRUE if disparity > threshold
+
+FAIRNESS THRESHOLDS:
+  disparity < 0.05   → Excellent fairness ✅
+  0.05 ≤ disparity < 0.10 → Good fairness ✅
+  0.10 ≤ disparity < 0.20 → Fair (monitored) ⚠️
+  disparity ≥ 0.20   → Poor fairness ❌ (requires intervention)
+
+CONFIGURATION:
+  FAIRNESS_THRESHOLD = 0.10 (10% maximum allowed disparity)
+
+EXAMPLE FAIRNESS EVALUATION:
+
+  Model: Loan Approval
+  Protected Attribute: "gender"
+  
+  Data:
+    Group "M" (Male):
+      - Total: 500 predictions
+      - Approved: 350
+      - Approval rate: 350/500 = 0.70 (70%)
+    
+    Group "F" (Female):
+      - Total: 500 predictions
+      - Approved: 300
+      - Approval rate: 300/500 = 0.60 (60%)
+  
+  Disparity: 0.70 - 0.60 = 0.10 (10%)
+  fairness_flag: TRUE (equals threshold, triggers at-risk status)
+  
+  INTERPRETATION: Bias detected between genders ⚠️
+
+
+3.4 GOVERNANCE POLICY EVALUATION (Phase 5)
+-------------------------------------------
+
+DECISION TREE:
+
+                    ┌─────────────────────────┐
+                    │ Model Governance Status │
+                    └────────────┬────────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    │                         │
+                    ▼                         ▼
+        ┌───────────────────────┐  ┌────────────────────────┐
+        │ Is risk_score >       │  │ Is disparity >         │
+        │ max_allowed_mri?      │  │ max_allowed_disparity? │
+        └───────────┬───────────┘  └────────────┬───────────┘
+                    │                           │
+                YES │                           │ YES
+                    ▼                           ▼
+            ┌─────────────────┐        ┌────────────────┐
+            │ STATUS: BLOCKED │        │ STATUS: AT_RISK│
+            │ (No deployment) │        │ (Review needed)│
+            └─────────────────┘        └────────────────┘
+                    ▲
+                    │
+                    │ NO
+                    └─────────────────────────────┐
+                                                  │
+                                    ┌─────────────▼──────────────┐
+                                    │ Is risk_score >            │
+                                    │ approval_required_above_mri?│
+                                    └────────────┬────────────────┘
+                                                 │
+                                    YES│         │NO
+                                       ▼         ▼
+                            ┌──────────────────────────┐
+                            │  STATUS: AT_RISK         │ STATUS: APPROVED
+                            │  (Approval required)     │ (Ready to deploy)
+                            └──────────────────────────┘
+
+Implementation: backend/app/services/governance_service.py:13-75
+
+CONFIGURATION PARAMETERS (from GovernancePolicy):
+  - max_allowed_mri: 80.0 (hard block threshold)
+  - max_allowed_disparity: 0.15 (fairness block)
+  - approval_required_above_mri: 60.0 (approval threshold)
+
+DEFAULT POLICY:
+  {
+    "name": "Default Production Policy",
+    "max_allowed_mri": 80.0,
+    "max_allowed_disparity": 0.15,
+    "approval_required_above_mri": 60.0,
+    "active": true
+  }
+
+STATUS OUTCOMES:
+  - BLOCKED: Cannot deploy (admin override needed)
+  - AT_RISK: Can deploy with approval
+  - APPROVED: Ready to deploy
+  - DRAFT: Not yet evaluated
+
+DEPLOYMENT CONTROL:
+  - BLOCKED models: deployment endpoint returns 403 Forbidden
+  - AT_RISK models: deployment allowed with override parameter
+  - APPROVED models: deployment allowed normally
+
+
+3.5 DASHBOARD AGGREGATION (Phase 7)
+-----------------------------------
+
+Read-only queries for executive summary metrics
+
+QUERIES:
+
+1. SUMMARY AGGREGATION:
+   SELECT
+     COUNT(*) as total_models,
+     COUNTIF(risk_score > 80) as models_at_risk,
+     COUNTIF(status='at_risk' OR status='blocked') as active_overrides,
+     AVG(risk_score) as average_compliance_score
+   FROM risk_history
+   WHERE timestamp = (latest)
+
+2. RISK TRENDS (configurable days):
+   SELECT
+     DATE_TRUNC('day', timestamp) as date,
+     COUNT(*) as model_count,
+     AVG(risk_score) as avg_risk,
+     MAX(risk_score) as max_risk,
+     MIN(risk_score) as min_risk,
+     AVG(fairness_component) as avg_fairness
+   FROM risk_history
+   WHERE timestamp >= NOW() - INTERVAL '30 days'
+   GROUP BY DATE_TRUNC('day', timestamp)
+
+3. DEPLOYMENT TRENDS (configurable days):
+   SELECT
+     DATE_TRUNC('day', timestamp) as date,
+     COUNT(*) as total_deployments,
+     COUNTIF(status='approved') as successful_deployments,
+     COUNTIF(status='blocked') as blocked_count
+   FROM model_registry
+   WHERE timestamp >= NOW() - INTERVAL '30 days'
+
+4. COMPLIANCE DISTRIBUTION:
+   SELECT
+     COUNTIF(risk_score < 30) as excellent,
+     COUNTIF(risk_score >= 30 AND risk_score < 60) as good,
+     COUNTIF(risk_score >= 60 AND risk_score < 80) as fair,
+     COUNTIF(risk_score >= 80) as at_risk,
+     COUNTIF(status='blocked') as blocked
+   FROM risk_history
+
+Compliance Grades:
+  A: risk_score < 30 (Excellent)
+  B: 30 ≤ risk_score < 60 (Good)
+  C: 60 ≤ risk_score < 80 (Fair)
+  D: 80 ≤ risk_score < 95 (At Risk)
+  F: risk_score ≥ 95 (Critical)
+
+
+3.6 GOVERNANCE SIMULATION (Phase 7)
+-----------------------------------
+
+In-memory policy evaluation for testing scenarios
+
+ALGORITHM:
+  1. Input: risk_score (0-100), fairness_score (0-100), override (bool)
+  2. Load active governance policy
+  3. Apply same decision logic as production (no DB writes)
+  4. Return result with would_pass, compliance_grade, reason
+  5. Mark response with "simulation": true
+
+BATCH SIMULATION:
+  - Input: Array of up to 100 test scenarios
+  - Output: Aggregated pass_rate, detailed results
+  - No database modifications
+  - Used for "what-if" analysis
+
+================================================================================
+SECTION 4: DATABASE SCHEMA & DATA MODELS
+================================================================================
+
+4.1 USERS TABLE
+---------------
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR UNIQUE NOT NULL,
+    username VARCHAR UNIQUE NOT NULL,
+    hashed_password VARCHAR NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    role VARCHAR DEFAULT 'user',  -- 'user', 'admin'
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+Key Fields:
+  - id: Primary key (auto-increment)
+  - email: Unique identifier
+  - hashed_password: bcrypt hash
+  - role: 'user' or 'admin' (for governance override)
+  - is_active: Soft delete flag
+
+Relationships:
+  - One-to-Many: User → Models (user creates models)
+
+
+4.2 MODEL_REGISTRY TABLE
+------------------------
+
+CREATE TABLE model_registry (
+    id SERIAL PRIMARY KEY,
+    model_name VARCHAR NOT NULL,
+    version VARCHAR NOT NULL,
+    description TEXT,
+    training_accuracy FLOAT,
+    fairness_baseline FLOAT,
+    schema_definition JSONB,  -- Feature definitions
+    deployment_status VARCHAR DEFAULT 'draft',  -- draft, deployed
+    status VARCHAR DEFAULT 'draft',  -- draft, approved, at_risk, blocked
+    created_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+Key Fields:
+  - id: Unique model identifier
+  - model_name: Human-readable name
+  - version: Semantic version (e.g., "1.0.0")
+  - training_accuracy: Original training accuracy
+  - schema_definition: JSON mapping feature names to types
+  - deployment_status: Production deployment state
+  - status: Governance state (approved/at_risk/blocked)
+
+Governance Status Values:
+  - draft: Initial state, not evaluated
+  - approved: Passed all governance checks
+  - at_risk: Requires admin approval before deployment
+  - blocked: Cannot deploy, requires override
+
+Index:
+  CREATE INDEX ix_model_registry_model_name ON model_registry(model_name);
+
+
+4.3 PREDICTION_LOGS TABLE
+-------------------------
+
+CREATE TABLE prediction_logs (
+    id SERIAL PRIMARY KEY,
+    model_id INTEGER REFERENCES model_registry(id),
+    input_features JSONB NOT NULL,  -- {feature1: value1, ...}
+    prediction FLOAT NOT NULL,  -- Model output (0-1 for classification)
+    actual_outcome FLOAT,  -- Ground truth if available
+    timestamp TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+Key Fields:
+  - model_id: Reference to model
+  - input_features: JSON object of feature values
+  - prediction: Model output value
+  - actual_outcome: Ground truth for monitoring
+  - timestamp: When prediction was made
+
+Example input_features:
+{
+  "age": 45,
+  "gender": "M",
+  "income": 75000,
+  "credit_score": 720
+}
+
+Indexes:
+  CREATE INDEX ix_prediction_logs_model_timestamp 
+    ON prediction_logs(model_id, timestamp DESC);
+
+
+4.4 DRIFT_METRICS TABLE
+------------------------
+
+CREATE TABLE drift_metrics (
+    id SERIAL PRIMARY KEY,
+    model_id INTEGER REFERENCES model_registry(id),
+    feature_name VARCHAR NOT NULL,  -- Feature being monitored
+    psi_value FLOAT NOT NULL,  -- Population Stability Index
+    ks_statistic FLOAT NOT NULL,  -- Kolmogorov-Smirnov statistic
+    drift_flag BOOLEAN NOT NULL,  -- TRUE if (PSI >= 0.25) OR (KS >= 0.20)
+    timestamp TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+Key Fields:
+  - model_id: Which model
+  - feature_name: Which feature (or "prediction" for output distribution)
+  - psi_value: Range 0 to ∞ (threshold: 0.25)
+  - ks_statistic: Range 0 to 1 (threshold: 0.20)
+  - drift_flag: TRUE if either metric exceeds threshold
+
+Indexes:
+  CREATE INDEX ix_drift_metrics_model_timestamp 
+    ON drift_metrics(model_id, timestamp DESC);
+
+
+4.5 RISK_HISTORY TABLE
+-----------------------
+
+CREATE TABLE risk_history (
+    id SERIAL PRIMARY KEY,
+    model_id INTEGER REFERENCES model_registry(id),
+    risk_score FLOAT NOT NULL,  -- MRI (0-100)
+    drift_component FLOAT NOT NULL,  -- Drift contribution (0-100)
+    fairness_component FLOAT NOT NULL,  -- Fairness contribution (0-100)
+    timestamp TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+Key Fields:
+  - model_id: Which model
+  - risk_score: Overall MRI (0-100)
+  - drift_component: Drift risk (60% weight)
+  - fairness_component: Fairness risk (40% weight)
+
+Calculation Verification:
+  risk_score = (drift_component * 0.6) + (fairness_component * 0.4)
+
+Indexes:
+  CREATE INDEX ix_risk_history_model_timestamp 
+    ON risk_history(model_id, timestamp DESC);
+
+
+4.6 FAIRNESS_METRICS TABLE
+---------------------------
+
+CREATE TABLE fairness_metrics (
+    id SERIAL PRIMARY KEY,
+    model_id INTEGER REFERENCES model_registry(id),
+    protected_attribute VARCHAR NOT NULL,  -- e.g., "gender"
+    group_name VARCHAR NOT NULL,  -- e.g., "M", "F"
+    total_predictions INTEGER NOT NULL,
+    positive_predictions INTEGER NOT NULL,
+    approval_rate FLOAT NOT NULL,  -- positive / total
+    disparity_score FLOAT NOT NULL,  -- max - min approval rate
+    fairness_flag BOOLEAN NOT NULL,  -- TRUE if disparity > threshold
+    timestamp TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+Key Fields:
+  - protected_attribute: Name of demographic attribute
+  - group_name: Value of attribute (e.g., age_group="30-40")
+  - total_predictions: Sample size for group
+  - approval_rate: Proportion of positive outcomes
+  - disparity_score: Group disparity (0-1)
+  - fairness_flag: TRUE if disparity > 0.10
+
+Example Data:
+  Model: loan_approval_v2
+  Protected Attribute: gender
+  Groups:
+    - group_name="M": total=500, positive=350, approval_rate=0.70
+    - group_name="F": total=500, positive=280, approval_rate=0.56
+    - disparity_score = 0.70 - 0.56 = 0.14
+    - fairness_flag = TRUE (0.14 > 0.10 threshold)
+
+Indexes:
+  CREATE INDEX ix_fairness_metrics_model_timestamp 
+    ON fairness_metrics(model_id, timestamp DESC);
+
+
+4.7 GOVERNANCE_POLICIES TABLE
+------------------------------
+
+CREATE TABLE governance_policies (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR UNIQUE NOT NULL,
+    max_allowed_mri FLOAT NOT NULL,
+    max_allowed_disparity FLOAT NOT NULL,
+    approval_required_above_mri FLOAT NOT NULL,
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+Key Fields:
+  - name: Policy identifier
+  - max_allowed_mri: Hard block threshold (0-100)
+  - max_allowed_disparity: Fairness block threshold (0-1)
+  - approval_required_above_mri: Soft threshold (0-100)
+  - active: Only one policy active at a time
+
+Default Policy:
+  {
+    "name": "Default Production Policy",
+    "max_allowed_mri": 80.0,
+    "max_allowed_disparity": 0.15,
+    "approval_required_above_mri": 60.0,
+    "active": true
+  }
+
+Decision Rules (Applied in Order):
+  1. IF risk_score > max_allowed_mri → BLOCKED
+  2. ELIF disparity_score > max_allowed_disparity → AT_RISK
+  3. ELIF risk_score > approval_required_above_mri → AT_RISK
+  4. ELSE → APPROVED
+
+Relationships:
+  - Zero-to-Many: Policy → Models (policy applies to all)
+
+================================================================================
+SECTION 5: API ENDPOINTS & PARAMETERS
+================================================================================
+
+5.1 AUTHENTICATION ENDPOINTS (Phase 1)
+--------------------------------------
+
+ENDPOINT 1: User Registration
+  POST /auth/register
+  
+  Request Body:
+  {
+    "email": "user@example.com",
+    "username": "john_doe",
+    "password": "SecurePassword123!",
+    "role": "user"  // Optional, defaults to "user"
+  }
+  
+  Response (201 Created):
+  {
+    "id": 1,
+    "email": "user@example.com",
+    "username": "john_doe",
+    "role": "user",
+    "is_active": true,
+    "created_at": "2026-02-24T10:30:00Z"
+  }
+  
+  Validation:
+    - email: Must be valid email format, unique
+    - password: Hashed with bcrypt, stored securely
+    - username: Unique identifier
+
+---
+
+ENDPOINT 2: Login / Token Generation
+  POST /auth/login
+  
+  Request Body (Form Data):
+  {
+    "username": "john_doe",
+    "password": "SecurePassword123!"
+  }
+  
+  Response (200 OK):
+  {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "bearer",
+    "expires_in": 1800  // seconds (30 minutes default)
+  }
+  
+  JWT Token Configuration:
+    - Algorithm: HS256
+    - Secret: SECRET_KEY from .env
+    - Expiry: ACCESS_TOKEN_EXPIRE_MINUTES = 30
+    - Payload includes: user_id, username, email
+
+
+5.2 MODEL REGISTRY ENDPOINTS (Phase 1)
+--------------------------------------
+
+ENDPOINT 1: Create Model
+  POST /models
+  Authentication: Required (Bearer token)
+  
+  Request Body:
+  {
+    "model_name": "fraud_detection_v2",
+    "version": "2.0.0",
+    "description": "Advanced fraud detection model",
+    "training_accuracy": 0.95,
+    "fairness_baseline": 0.02,
+    "schema_definition": {
+      "amount": "float",
+      "merchant_category": "string",
+      "transaction_hour": "int",
+      "user_age": "int",
+      "days_since_signup": "int"
+    }
+  }
+  
+  Response (201 Created):
+  {
+    "id": 123,
+    "model_name": "fraud_detection_v2",
+    "version": "2.0.0",
+    "description": "...",
+    "deployment_status": "draft",
+    "status": "draft",
+    "created_by": 1,
+    "created_at": "2026-02-24T10:30:00Z"
+  }
+
+---
+
+ENDPOINT 2: List All Models
+  GET /models
+  Authentication: Required
+  Query Parameters:
+    - skip: integer (pagination offset, default 0)
+    - limit: integer (page size, default 10)
+  
+  Response (200 OK):
+  [
+    {
+      "id": 123,
+      "model_name": "fraud_detection_v2",
+      "version": "2.0.0",
+      "deployment_status": "draft",
+      "status": "draft",
+      "created_at": "2026-02-24T10:30:00Z"
+    },
+    ...
+  ]
+
+---
+
+ENDPOINT 3: Get Model Details
+  GET /models/{model_id}
+  Authentication: Required
+  Path Parameters:
+    - model_id: integer (model identifier)
+  
+  Response (200 OK):
+  {
+    "id": 123,
+    "model_name": "fraud_detection_v2",
+    "version": "2.0.0",
+    "description": "...",
+    "training_accuracy": 0.95,
+    "schema_definition": {...},
+    "deployment_status": "draft",
+    "status": "draft",
+    "created_at": "2026-02-24T10:30:00Z"
+  }
+
+---
+
+ENDPOINT 4: Update Model
+  PUT /models/{model_id}
+  Authentication: Required
+  
+  Request Body (all fields optional):
+  {
+    "description": "Updated description",
+    "training_accuracy": 0.96
+  }
+  
+  Response (200 OK): Updated model object
+
+---
+
+ENDPOINT 5: Delete Model
+  DELETE /models/{model_id}
+  Authentication: Required
+  Response (204 No Content)
+
+
+5.3 PREDICTION LOGGING ENDPOINTS (Phase 2)
+-------------------------------------------
+
+ENDPOINT 1: Log Prediction
+  POST /logs/prediction
+  Authentication: Required
+  
+  Request Body:
+  {
+    "model_id": 123,
+    "input_features": {
+      "amount": 500.00,
+      "merchant_category": "grocery",
+      "transaction_hour": 14,
+      "user_age": 35,
+      "days_since_signup": 180,
+      "gender": "M"  // Protected attribute for fairness
+    },
+    "prediction": 0.15,  // 0-1 for classification
+    "actual_outcome": 0.0  // Optional ground truth
+  }
+  
+  Response (201 Created):
+  {
+    "id": 456,
+    "model_id": 123,
+    "prediction": 0.15,
+    "timestamp": "2026-02-24T10:35:00Z"
+  }
+
+---
+
+ENDPOINT 2: Get Predictions for Model
+  GET /logs/prediction/{model_id}
+  Authentication: Required
+  Query Parameters:
+    - skip: integer (default 0)
+    - limit: integer (default 100)
+  
+  Response (200 OK):
+  [
+    {
+      "id": 456,
+      "model_id": 123,
+      "input_features": {...},
+      "prediction": 0.15,
+      "actual_outcome": 0.0,
+      "timestamp": "2026-02-24T10:35:00Z"
+    },
+    ...
+  ]
+
+
+5.4 DRIFT DETECTION ENDPOINTS (Phase 2)
+---------------------------------------
+
+ENDPOINT 1: Get Drift Metrics
+  GET /models/{model_id}/drift
+  Authentication: Required
+  Query Parameters:
+    - limit: integer (default 100, max recent metrics)
+  
+  Response (200 OK):
+  {
+    "model_id": 123,
+    "metrics": [
+      {
+        "id": 789,
+        "feature_name": "amount",
+        "psi_value": 0.18,
+        "ks_statistic": 0.15,
+        "drift_flag": false,
+        "timestamp": "2026-02-24T10:40:00Z"
+      },
+      {
+        "id": 790,
+        "feature_name": "prediction",
+        "psi_value": 0.28,
+        "ks_statistic": 0.22,
+        "drift_flag": true,  // DRIFT DETECTED
+        "timestamp": "2026-02-24T10:40:00Z"
+      },
+      ...
+    ]
+  }
+
+---
+
+ENDPOINT 2: Recalculate Drift
+  POST /models/{model_id}/drift/recalculate
+  Authentication: Required
+  
+  Response (200 OK):
+  {
+    "status": "success",
+    "drift_metrics_created": 5,
+    "drift_detected": true,
+    "message": "Drift calculation completed"
+  }
+
+
+5.5 RISK SCORING ENDPOINTS (Phase 2)
+------------------------------------
+
+ENDPOINT 1: Get Risk History
+  GET /models/{model_id}/risk-history
+  Authentication: Required
+  Query Parameters:
+    - limit: integer (default 100)
+  
+  Response (200 OK):
+  [
+    {
+      "id": 1001,
+      "model_id": 123,
+      "risk_score": 35.2,
+      "drift_component": 25.0,
+      "fairness_component": 50.0,
+      "timestamp": "2026-02-24T10:45:00Z"
+    },
+    {
+      "id": 1000,
+      "model_id": 123,
+      "risk_score": 32.1,
+      "drift_component": 22.0,
+      "fairness_component": 48.0,
+      "timestamp": "2026-02-24T09:45:00Z"
+    },
+    ...
+  ]
+
+---
+
+ENDPOINT 2: Get Latest Risk Score
+  GET /models/{model_id}/risk-history/latest
+  Authentication: Required
+  
+  Response (200 OK):
+  {
+    "id": 1001,
+    "model_id": 123,
+    "risk_score": 35.2,
+    "drift_component": 25.0,
+    "fairness_component": 50.0,
+    "timestamp": "2026-02-24T10:45:00Z"
+  }
+
+
+5.6 FAIRNESS MONITORING ENDPOINTS (Phase 3)
+---------------------------------------------
+
+ENDPOINT 1: Evaluate Fairness
+  POST /models/{model_id}/fairness/evaluate
+  Authentication: Required
+  
+  Request Body:
+  {
+    "protected_attribute": "gender"  // e.g., "gender", "age_group", "race"
+  }
+  
+  Response (200 OK):
+  {
+    "model_id": 123,
+    "protected_attribute": "gender",
+    "disparity_score": 0.12,
+    "fairness_flag": true,  // BIAS DETECTED
+    "groups": [
+      {
+        "group_name": "M",
+        "total_predictions": 500,
+        "positive_predictions": 350,
+        "approval_rate": 0.70
+      },
+      {
+        "group_name": "F",
+        "total_predictions": 500,
+        "positive_predictions": 300,
+        "approval_rate": 0.60
+      }
+    ]
+  }
+
+---
+
+ENDPOINT 2: Get Fairness Metrics
+  GET /models/{model_id}/fairness
+  Authentication: Required
+  Query Parameters:
+    - limit: integer (default 100)
+  
+  Response (200 OK):
+  [
+    {
+      "id": 1101,
+      "protected_attribute": "gender",
+      "group_name": "M",
+      "approval_rate": 0.70,
+      "disparity_score": 0.12,
+      "fairness_flag": true,
+      "timestamp": "2026-02-24T10:50:00Z"
+    },
+    ...
+  ]
+
+---
+
+ENDPOINT 3: Get By Protected Attribute
+  GET /models/{model_id}/fairness/attribute/{protected_attribute}
+  Authentication: Required
+  
+  Response: Array of fairness metrics for attribute
+
+
+5.7 GOVERNANCE ENDPOINTS (Phase 5)
+----------------------------------
+
+ENDPOINT 1: Evaluate Governance
+  POST /models/{model_id}/evaluate-governance
+  Authentication: Required
+  
+  Response (200 OK):
+  {
+    "status": "at_risk",  // draft, approved, at_risk, blocked
+    "reason": "Risk score 65.0 requires approval (threshold 60.0)",
+    "risk_score": 65.0,
+    "disparity_score": 0.08
+  }
+
+---
+
+ENDPOINT 2: Deploy Model
+  POST /models/{model_id}/deploy
+  Authentication: Required (Admin for override)
+  
+  Request Body:
+  {
+    "override": false  // True only if admin overriding at_risk/blocked
+  }
+  
+  Response (200 OK):
+  {
+    "model_id": 123,
+    "deployment_status": "deployed",
+    "status": "approved",
+    "deployment_timestamp": "2026-02-24T10:55:00Z"
+  }
+  
+  Error (403 Forbidden) if status == BLOCKED and no override:
+  {
+    "detail": "Model is blocked. Admin override required."
+  }
+
+---
+
+ENDPOINT 3: Get Governance Status
+  GET /models/{model_id}/status
+  Authentication: Required
+  
+  Response (200 OK):
+  {
+    "model_id": 123,
+    "deployment_status": "deployed",
+    "governance_status": "approved",
+    "active_policy": {
+      "id": 1,
+      "name": "Default Production Policy",
+      "max_allowed_mri": 80.0,
+      "max_allowed_disparity": 0.15,
+      "approval_required_above_mri": 60.0
+    }
+  }
+
+---
+
+ENDPOINT 4: Create Governance Policy
+  POST /governance/policies
+  Authentication: Required (Admin only)
+  
+  Request Body:
+  {
+    "name": "Strict Production Policy",
+    "max_allowed_mri": 70.0,
+    "max_allowed_disparity": 0.10,
+    "approval_required_above_mri": 50.0,
+    "active": false
+  }
+  
+  Response (201 Created):
+  {
+    "id": 2,
+    "name": "Strict Production Policy",
+    "max_allowed_mri": 70.0,
+    "max_allowed_disparity": 0.10,
+    "approval_required_above_mri": 50.0,
+    "active": false,
+    "created_at": "2026-02-24T11:00:00Z"
+  }
+
+---
+
+ENDPOINT 5: List Governance Policies
+  GET /governance/policies
+  Authentication: Required
+  
+  Response (200 OK):
+  [
+    {
+      "id": 1,
+      "name": "Default Production Policy",
+      "max_allowed_mri": 80.0,
+      "max_allowed_disparity": 0.15,
+      "approval_required_above_mri": 60.0,
+      "active": true,
+      "created_at": "2026-02-23T00:00:00Z"
+    },
+    ...
+  ]
+
+---
+
+ENDPOINT 6-8: Get/Update/Delete Policy by ID
+  GET /governance/policies/{policy_id}
+  PUT /governance/policies/{policy_id}
+  DELETE /governance/policies/{policy_id}
+
+
+5.8 PHASE 6: RUNYANYWHERE SDK ENDPOINTS
+----------------------------------------
+
+ENDPOINT 1: Explain Risk Decision
+  POST /models/{model_id}/explain
+  Authentication: Required
+  
+  Request Body:
+  {
+    "threshold": 60.0  // Optional decision threshold
+  }
+  
+  Response (200 OK):
+  {
+    "risk_score": 65.0,
+    "fairness_score": 0.12,
+    "threshold": 60.0,
+    "explanation": "Model shows elevated risk due to increased prediction variance and fairness concerns...",
+    "recommendations": [
+      "Review recent data distribution",
+      "Evaluate fairness metrics across demographics",
+      "Consider retraining with recent data"
+    ],
+    "sdk_available": true,
+    "generated_at": "2026-02-24T11:05:00Z"
+  }
+
+---
+
+ENDPOINT 2: Risk Forecast
+  GET /models/{model_id}/forecast?limit=50
+  Authentication: Required
+  
+  Response (200 OK):
+  {
+    "current_risk": 65.0,
+    "average_risk": 55.3,
+    "forecast_horizon": 5,
+    "forecasted_values": [66.2, 68.1, 70.0, 69.5, 67.3],
+    "confidence": 0.85,
+    "sdk_available": true,
+    "generated_at": "2026-02-24T11:05:00Z"
+  }
+
+---
+
+ENDPOINT 3: Compliance Summary
+  GET /models/{model_id}/compliance
+  Authentication: Required
+  
+  Response (200 OK):
+  {
+    "model_name": "fraud_detection_v2",
+    "compliance_checks": [
+      {"check": "Data Quality", "status": "pass"},
+      {"check": "Fairness Validation", "status": "pass"},
+      {"check": "Model Robustness", "status": "warning"},
+      {"check": "Governance Alignment", "status": "pass"}
+    ],
+    "overall_status": "compliant",
+    "recommendations": [
+      "Investigate robustness warnings",
+      "Continue monitoring fairness metrics"
+    ],
+    "sdk_available": true,
+    "generated_at": "2026-02-24T11:05:00Z"
+  }
+
+
+5.9 PHASE 7: EXECUTIVE DASHBOARD ENDPOINTS
+--------------------------------------------
+
+ENDPOINT 1: Dashboard Summary
+  GET /dashboard/summary
+  Authentication: Required
+  
+  Response (200 OK):
+  {
+    "total_models": 45,
+    "models_at_risk": 8,
+    "active_overrides": 2,
+    "average_compliance_score": 62.3,
+    "timestamp": "2026-02-24T11:10:00Z"
+  }
+
+---
+
+ENDPOINT 2: Risk Trends
+  GET /dashboard/risk-trends?days=30
+  Authentication: Required
+  Query Parameters:
+    - days: integer (7, 30, 90 default 30)
+  
+  Response (200 OK):
+  {
+    "days": 30,
+    "trend_count": 30,
+    "trends": [
+      {
+        "date": "2026-02-24T00:00:00Z",
+        "model_count": 45,
+        "avg_risk": 62.5,
+        "max_risk": 92.1,
+        "min_risk": 5.2,
+        "avg_fairness": 0.08
+      },
+      ...
+    ],
+    "timestamp": "2026-02-24T11:10:00Z"
+  }
+
+---
+
+ENDPOINT 3: Deployment Trends
+  GET /dashboard/deployment-trends?days=30
+  Authentication: Required
+  
+  Response (200 OK):
+  {
+    "days": 30,
+    "deployment_count": 18,
+    "deployments": [
+      {
+        "date": "2026-02-24T00:00:00Z",
+        "total_deployments": 2,
+        "successful_deployments": 1,
+        "blocked_count": 1
+      },
+      ...
+    ],
+    "timestamp": "2026-02-24T11:10:00Z"
+  }
+
+---
+
+ENDPOINT 4: Compliance Distribution
+  GET /dashboard/compliance-distribution
+  Authentication: Required
+  
+  Response (200 OK):
+  {
+    "excellent": 8,   // A grade (risk < 30)
+    "good": 15,       // B grade (30 ≤ risk < 60)
+    "fair": 12,       // C grade (60 ≤ risk < 80)
+    "at_risk": 8,     // D grade (80 ≤ risk < 95)
+    "blocked": 2,     // F grade (risk ≥ 95)
+    "total_models": 45,
+    "timestamp": "2026-02-24T11:10:00Z"
+  }
+
+---
+
+ENDPOINT 5: Executive Summary
+  GET /dashboard/executive-summary
+  Authentication: Required
+  
+  Response (200 OK):
+  {
+    "summary": {
+      "total_models": 45,
+      "models_at_risk": 8,
+      "active_overrides": 2,
+      "average_compliance_score": 62.3
+    },
+    "narrative": "System shows moderate governance health. 8 models require review...",
+    "sdk_available": true,  // Narrative from Phase 6 SDK if available
+    "timestamp": "2026-02-24T11:10:00Z"
+  }
+
+
+5.10 PHASE 7: GOVERNANCE SIMULATION ENDPOINTS
+-----------------------------------------------
+
+ENDPOINT 1: Single Simulation
+  POST /simulation/governance-check
+  Authentication: Required
+  
+  Request Body:
+  {
+    "risk_score": 75.0,
+    "fairness_score": 0.08,
+    "override": false
+  }
+  
+  Response (200 OK):
+  {
+    "would_pass": true,
+    "reason": "Risk score 75.0 is below max allowed 80.0",
+    "compliance_grade": "C",
+    "simulation": true,  // Marks as simulation
+    "policy_id": 1,
+    "policy_name": "Default Production Policy",
+    "details": {
+      "risk_component": "passed",
+      "fairness_component": "passed",
+      "approval_required": true
+    }
+  }
+
+---
+
+ENDPOINT 2: Batch Simulation
+  POST /simulation/batch-governance-check
+  Authentication: Required
+  
+  Request Body:
+  [
+    {"risk_score": 75.0, "fairness_score": 0.08, "override": false},
+    {"risk_score": 85.0, "fairness_score": 0.12, "override": false},
+    {"risk_score": 50.0, "fairness_score": 0.05, "override": false}
+  ]
+  
+  Response (200 OK):
+  {
+    "scenario_count": 3,
+    "passed_count": 2,
+    "pass_rate": 0.667,
+    "results": [
+      {"would_pass": true, "reason": "...", "compliance_grade": "C"},
+      {"would_pass": false, "reason": "...", "compliance_grade": "D"},
+      {"would_pass": true, "reason": "...", "compliance_grade": "B"}
+    ],
+    "simulation": true,
+    "policy_id": 1,
+    "policy_name": "Default Production Policy"
+  }
+
+================================================================================
+SECTION 6: CONFIGURATION PARAMETERS
+================================================================================
+
+6.1 ENVIRONMENT VARIABLES (.env file)
+--------------------------------------
+
+DATABASE_URL=postgresql://postgres:password@localhost:5432/driftguard_db
+  Purpose: PostgreSQL connection string
+  Format: postgresql://user:password@host:port/database_name
+  Example: postgresql://postgres:mypassword@localhost:5432/driftguard_prod
+
+SECRET_KEY=your-secret-key-change-this-in-production-min-32-chars
+  Purpose: JWT token signing key
+  Length: Minimum 32 characters for production
+  Security: Should be random, unique, stored securely (never in git)
+  Generation: openssl rand -hex 32
+
+ALGORITHM=HS256
+  Purpose: JWT signing algorithm
+  Options: HS256 (HMAC-SHA256), RS256 (RSA)
+  Default: HS256
+  Security: HS256 sufficient for internal APIs, RS256 for public APIs
+
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+  Purpose: JWT token expiration time
+  Value: 30 (minutes)
+  Range: 5-1440 (5 minutes to 24 hours)
+  Recommendation: 30 for most use cases, 60+ for long-running jobs
+
+DRIFT_WINDOW_SIZE=100
+  Purpose: Number of recent predictions for drift detection baseline
+  Value: 100
+  Range: 10-1000
+  Impact: Smaller window = faster drift detection, more false positives
+          Larger window = more stable, slower detection
+  Recommendation: 100 for daily monitoring, 1000 for monthly
+
+PSI_THRESHOLD=0.25
+  Purpose: Population Stability Index threshold for drift flag
+  Value: 0.25
+  Range: 0.05-1.0
+  Impact: Lower threshold = more sensitive to changes
+          Higher threshold = only detects major changes
+  Interpretation:
+    < 0.10: No change
+    0.10-0.25: Moderate change
+    ≥ 0.25: Significant change (default: triggers drift flag)
+  Recommendation: 0.25 for production, 0.15 for strict monitoring
+
+KS_THRESHOLD=0.2
+  Purpose: Kolmogorov-Smirnov test threshold for drift flag
+  Value: 0.2 (20% max vertical distance between distributions)
+  Range: 0.05-0.5
+  Impact: Lower = more sensitive, higher = more lenient
+  Recommendation: 0.20 for production models, 0.15 for critical systems
+
+FAIRNESS_THRESHOLD=0.1
+  Purpose: Maximum allowed approval rate disparity between groups
+  Value: 0.1 (10% difference)
+  Range: 0.01-0.5
+  Impact: Lower = stricter fairness standards
+          Higher = allows more disparity
+  Interpretation:
+    ≤ 0.05: Excellent fairness
+    0.05-0.10: Good fairness
+    0.10-0.20: Fair (monitored)
+    ≥ 0.20: Poor fairness (requires intervention)
+  Recommendation: 0.10 for compliance, 0.05 for strict
+
+
+6.2 GOVERNANCE POLICY PARAMETERS
+---------------------------------
+
+Default Governance Policy:
+{
+  "name": "Default Production Policy",
+  "max_allowed_mri": 80.0,
+  "max_allowed_disparity": 0.15,
+  "approval_required_above_mri": 60.0
+}
+
+max_allowed_mri (Model Risk Index threshold)
+  Purpose: Hard block threshold - models exceeding this cannot deploy
+  Value: 80.0
+  Range: 50.0-100.0
+  Impact: Lower = stricter (more models blocked)
+          Higher = lenient (fewer models blocked)
+  Decision Logic: IF risk_score > max_allowed_mri → STATUS = BLOCKED
+  Recommendation:
+    - Conservative: 70.0 (strict)
+    - Balanced: 80.0 (default)
+    - Permissive: 90.0 (lenient)
+
+max_allowed_disparity (Fairness threshold)
+  Purpose: Maximum approval rate difference between demographic groups
+  Value: 0.15 (15% difference)
+  Range: 0.0-1.0
+  Impact: Lower = fairer standards
+  Decision Logic: IF disparity > max_allowed_disparity → STATUS = AT_RISK
+  Recommendation:
+    - Strict (regulatory): 0.05
+    - Balanced: 0.10
+    - Default (compliant): 0.15
+    - Lenient: 0.25
+
+approval_required_above_mri (Soft threshold)
+  Purpose: Risk level requiring admin approval before deployment
+  Value: 60.0
+  Range: 0.0-max_allowed_mri
+  Impact: Lower = fewer deployments require approval
+  Decision Logic:
+    IF (risk_score > approval_required_above_mri 
+        AND risk_score ≤ max_allowed_mri) 
+    → STATUS = AT_RISK
+  Recommendation:
+    - Conservative: 50.0
+    - Balanced: 60.0
+    - Permissive: 75.0
+
+Decision Tree with Default Policy:
+  1. risk_score = 85.0, disparity = 0.12
+     → 85.0 > 80.0 (max_allowed_mri)
+     → STATUS = BLOCKED ❌
+
+  2. risk_score = 75.0, disparity = 0.12
+     → 75.0 ≤ 80.0 ✓
+     → 0.12 > 0.15? NO ✓
+     → 75.0 > 60.0 (approval_required)?
+     → STATUS = AT_RISK (approval required) ⚠️
+
+  3. risk_score = 50.0, disparity = 0.08
+     → All checks passed
+     → STATUS = APPROVED ✅
+
+
+6.3 MODEL RISK INDEX (MRI) CALCULATION PARAMETERS
+--------------------------------------------------
+
+MRI Formula:
+  MRI = (drift_component * 0.60) + (fairness_component * 0.40)
+
+Drift Component Weight: 0.60 (60%)
+  - Accounts for data distribution changes
+  - PSI and KS based
+  - Weighted: (avg_psi * 60 + avg_ks * 40) / 1.6
+
+Fairness Component Weight: 0.40 (40%)
+  - Accounts for bias in model decisions
+  - Disparity score based
+  - Calculation: disparity_score * 100
+
+Normalization Range:
+  - Input: 0 to infinity (PSI can be >1)
+  - Output: Clamped to 0-100
+  - Formula: min(100, max(0, calculated_score))
+
+Risk Level Bucketing:
+  MRI 0-30   → Low Risk (Green) ✅
+  MRI 30-60  → Moderate Risk (Yellow) ⚠️
+  MRI 60-80  → High Risk (Orange) 🔴
+  MRI 80-95  → Critical Risk (Red) 🔴🔴
+  MRI 95+    → Severe Risk (Dark Red) 🛑
+
+================================================================================
+SECTION 7: AUTHENTICATION & SECURITY
+================================================================================
+
+7.1 JWT AUTHENTICATION
+-----------------------
+
+Token Generation Flow:
+  1. User submits: username, password
+  2. Backend validates credentials
+  3. If valid: generate JWT token
+  4. Return: {"access_token": "...", "token_type": "bearer"}
+
+Token Structure (JWT):
+  Header: {"alg": "HS256", "typ": "JWT"}
+  Payload: {
+    "user_id": 1,
+    "username": "john_doe",
+    "email": "john@example.com",
+    "exp": 1708696200  // Expiration timestamp (30 min from now)
+  }
+  Signature: HMAC-SHA256(header.payload, SECRET_KEY)
+
+Token Usage:
+  - Add to headers: Authorization: Bearer <token>
+  - Valid for 30 minutes (configurable)
+  - Automatically refreshed on each successful request
+  - Revoked on logout or expiration
+
+Password Security:
+  - Hashing: bcrypt with salt rounds = 12
+  - Storage: Only hashed password stored in database
+  - Validation: bcrypt.verify(input_password, hashed_password)
+  - No password recovery: Users must reset via secure link
+
+7.2 ROLE-BASED ACCESS CONTROL
+------------------------------
+
+Roles Defined:
+  - "user": Can view models, log predictions, view metrics
+  - "admin": All user permissions + governance policy management + deployment override
+
+Permission Matrix:
+┌─────────────────────────────────┬──────────┬───────┐
+│ Action                          │ user     │ admin │
+├─────────────────────────────────┼──────────┼───────┤
+│ View models                     │    ✅    │  ✅   │
+│ Create models                   │    ✅    │  ✅   │
+│ Log predictions                 │    ✅    │  ✅   │
+│ View drift metrics              │    ✅    │  ✅   │
+│ View fairness metrics           │    ✅    │  ✅   │
+│ Evaluate governance             │    ✅    │  ✅   │
+│ Create governance policy        │    ❌    │  ✅   │
+│ Update governance policy        │    ❌    │  ✅   │
+│ Override deployment block       │    ❌    │  ✅   │
+│ Deploy blocked models           │    ❌    │  ✅   │
+│ View admin dashboard            │    ❌    │  ✅   │
+└─────────────────────────────────┴──────────┴───────┘
+
+7.3 ENDPOINT SECURITY
+---------------------
+
+All endpoints require JWT token in Authorization header:
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+Missing/Invalid Token Response (401 Unauthorized):
+  {
+    "detail": "Not authenticated"
+  }
+
+Expired Token Response (401 Unauthorized):
+  {
+    "detail": "Token has expired"
+  }
+
+Admin-Only Endpoint Response (403 Forbidden):
+  {
+    "detail": "Insufficient permissions"
+  }
+
+================================================================================
+SECTION 8: FRONTEND ARCHITECTURE
+================================================================================
+
+8.1 PAGE STRUCTURE
+------------------
+
+LoginPage.tsx (src/pages/LoginPage.tsx)
+  Purpose: User authentication
+  Features:
+    - Email/username input
+    - Password input
+    - Login form submission
+    - Token storage in localStorage
+    - Redirect to dashboard on success
+  Dependencies: React Router, axios
+
+DashboardPage.tsx (src/pages/DashboardPage.tsx)
+  Purpose: Model overview and monitoring
+  Features:
+    - List all models
+    - Display risk scores
+    - Filter/sort capabilities
+    - Quick links to model details
+  API Calls:
+    - GET /models
+    - GET /models/{id}/risk-history/latest
+
+ModelDetailPage.tsx (src/pages/ModelDetailPage.tsx)
+  Purpose: Detailed model analytics
+  Features:
+    - Model metadata
+    - Drift metrics table
+    - Risk score trends (chart)
+    - Fairness breakdown
+    - Governance status
+    - Deploy button
+  API Calls:
+    - GET /models/{id}
+    - GET /models/{id}/drift
+    - GET /models/{id}/risk-history
+    - GET /models/{id}/fairness
+    - GET /models/{id}/status
+    - POST /models/{id}/deploy
+
+AuditPage.tsx (src/pages/AuditPage.tsx)
+  Purpose: Compliance and audit trail
+  Features:
+    - Fairness metrics by attribute
+    - Governance policy review
+    - Deployment history
+  API Calls:
+    - GET /models
+    - GET /governance/policies
+    - GET /models/{id}/fairness
+
+GovernancePage.tsx (src/pages/GovernancePage.tsx)
+  Purpose: Governance policy management
+  Features:
+    - View active policy
+    - Create new policies (admin)
+    - Update thresholds
+    - Policy history
+  API Calls:
+    - GET /governance/policies
+    - POST /governance/policies
+    - PUT /governance/policies/{id}
+
+CommandCenterPage.tsx (src/pages/CommandCenterPage.tsx)
+  Purpose: Executive dashboard (Phase 7)
+  Features:
+    - System-wide summary metrics
+    - Risk trends chart
+    - Deployment trends
+    - Compliance grade distribution
+    - Governance simulation
+  API Calls:
+    - GET /dashboard/summary
+    - GET /dashboard/risk-trends
+    - GET /dashboard/deployment-trends
+    - GET /dashboard/compliance-distribution
+    - POST /simulation/governance-check
+
+
+8.2 COMPONENT STRUCTURE
+-----------------------
+
+CommandCenter.tsx (src/components/CommandCenter.tsx)
+  Contains 5 reusable components for Phase 7:
+
+  1. ExecutiveSummaryCard
+     - Displays: total_models, models_at_risk, active_overrides, compliance_score
+     - Color-coded badges
+     - Responsive grid layout
+
+  2. RiskOverviewChart
+     - Tabular display of risk trends
+     - Columns: date, model_count, avg_risk, max_risk, min_risk
+     - Scrollable table with last 10 entries
+
+  3. DeploymentTrendChart
+     - Tabular display of deployment trends
+     - Columns: date, total_deployments, successful_deployments, blocked_count
+     - Color-coded (green for success, red for blocked)
+
+  4. ComplianceDistributionWidget
+     - Horizontal bar chart
+     - Shows distribution: A, B, C, D, F grades
+     - Color-coded bars with percentages
+
+  5. GovernanceSimulationPanel
+     - Risk score slider (0-100)
+     - Fairness score slider (0-100)
+     - Override checkbox
+     - Simulate button with loading state
+     - Results display with pass/fail badge, grade, reason, details
+
+Other Components:
+
+  Sidebar.tsx
+    - Navigation menu
+    - Links to all pages
+    - User profile
+    - Logout button
+
+  Navbar.tsx
+    - Top navigation bar
+    - Breadcrumbs
+    - Search bar (optional)
+
+  StatusBadge.tsx
+    - Component for displaying model status
+    - Colors: green (approved), yellow (at_risk), red (blocked)
+
+  ProtectedRoute.tsx
+    - Wrapper for authenticated routes
+    - Redirects to login if not authenticated
+
+  Common.tsx
+    - Reusable utilities
+    - Loading spinner
+    - Error messages
+
+
+8.3 API SERVICE LAYER
+---------------------
+
+api.ts (src/services/api.ts)
+  - Axios instance configuration
+  - Base URL: http://localhost:8000 (configurable)
+  - Default headers: Content-Type: application/json
+  - Token injection: Authorization: Bearer <token>
+  - Interceptors for error handling
+
+dashboardAPI.ts (src/services/dashboardAPI.ts)
+  Export object with methods:
+
+  getSummary()
+    GET /dashboard/summary
+    Returns: {total_models, models_at_risk, ...}
+
+  getRiskTrends(days: number = 30)
+    GET /dashboard/risk-trends?days=30
+    Returns: {trends: [{date, model_count, avg_risk, ...}]}
+
+  getDeploymentTrends(days: number = 30)
+    GET /dashboard/deployment-trends?days=30
+    Returns: {deployments: [{date, total, successful, blocked}]}
+
+  getComplianceDistribution()
+    GET /dashboard/compliance-distribution
+    Returns: {excellent, good, fair, at_risk, blocked, total}
+
+  getExecutiveSummary()
+    GET /dashboard/executive-summary
+    Returns: {summary, narrative, sdk_available}
+
+  simulateGovernanceCheck(data)
+    POST /simulation/governance-check
+    Returns: {would_pass, reason, compliance_grade, details}
+
+  simulateBatchGovernanceCheck(requests)
+    POST /simulation/batch-governance-check
+    Returns: {scenario_count, passed_count, pass_rate, results}
+
+
+8.4 STYLING
+-----------
+
+command-center.css (src/styles/command-center.css)
+  - 600+ lines of professional dashboard styling
+  - Color scheme:
+    - Primary: #1e40af (blue)
+    - Success: #10b981 (green)
+    - Warning: #f59e0b (orange)
+    - Danger: #ef4444 (red)
+    - Neutral: #6b7280 (gray)
+
+  - Responsive breakpoints:
+    - Desktop: ≥1024px
+    - Tablet: 768px-1023px
+    - Mobile: <768px
+
+  - Components:
+    - Card containers with shadows
+    - Grid layouts (2-4 columns)
+    - Status badges
+    - Charts and tables
+    - Form inputs with validation states
+    - Smooth transitions and hover states
+
+
+8.5 STATE MANAGEMENT
+--------------------
+
+Approach: Local React Hooks (useState)
+  - No Redux/Context overhead
+  - Simple for Phase 7 scope
+  - Component-level state
+
+Example in CommandCenterPage:
+  const [timeRange, setTimeRange] = useState(30)  // 7, 30, 90
+  const [loading, setLoading] = useState(false)
+  const [summary, setSummary] = useState(null)
+  const [error, setError] = useState(null)
+
+================================================================================
+SECTION 9: HACKATHON Q&A
+================================================================================
+
+Q1: What is DriftGuardAI 2.0?
+----------------------------
+A: DriftGuardAI 2.0 is a production-grade AI Governance and Model Lifecycle
+   Intelligence Platform that monitors machine learning models for data drift,
+   fairness bias, and governance compliance. It provides real-time risk scoring,
+   automated policy enforcement, and executive dashboards for AI governance.
+
+   Key Features:
+   - Drift Detection (PSI + KS statistics)
+   - Risk Scoring (Model Risk Index 0-100)
+   - Fairness Monitoring (Demographic bias detection)
+   - Governance Policy Management (Deployment control)
+   - Executive Dashboard (Phase 7: Command Center)
+   - AI Intelligence Layer (Phase 6: RunAnywhere SDK)
+
+Q2: What machine learning algorithms are used?
+----------------------------------------------
+A: DriftGuardAI uses statistical methods rather than traditional ML:
+
+   1. POPULATION STABILITY INDEX (PSI)
+      - Measures distribution shift in features over time
+      - Formula: Σ (actual_% - expected_%) × ln(actual_% / expected_%)
+      - Threshold: PSI ≥ 0.25 indicates significant drift
+      - Implementation: numpy histogram-based calculation
+
+   2. KOLMOGOROV-SMIRNOV (KS) TEST
+      - Compares cumulative distributions
+      - Measures: max vertical distance between CDFs
+      - Range: 0-1 (0 = identical, 1 = completely different)
+      - Threshold: KS ≥ 0.20 indicates significant drift
+      - Implementation: scipy.stats.ks_2samp
+
+   3. DISPARITY SCORE (Fairness)
+      - Calculates approval rate differences between groups
+      - Formula: max(approval_rate) - min(approval_rate)
+      - Groups: Demographic segments (gender, age, race, etc.)
+      - Threshold: disparity > 0.10 triggers fairness flag
+
+   4. MODEL RISK INDEX (MRI)
+      - Composite risk score (0-100)
+      - Formula: (drift_component * 0.60) + (fairness_component * 0.40)
+      - Weights: 60% drift, 40% fairness
+      - Used for governance decisions
+
+   NOT traditional ML:
+   - No neural networks, decision trees, or regression models
+   - Pure statistical and mathematical approaches
+   - Focused on model monitoring, not prediction
+
+Q3: Why statistical methods instead of ML?
+-------------------------------------------
+A: Statistical methods provide several advantages for model monitoring:
+
+   1. INTERPRETABILITY
+      - Each metric has clear mathematical definition
+      - Easy to explain to non-technical stakeholders
+      - No "black box" AI decisions
+
+   2. COMPUTATIONAL EFFICIENCY
+      - Fast calculation on streaming data
+      - Low computational overhead
+      - Real-time alerts possible
+
+   3. ROBUSTNESS
+      - Well-tested statistical methods
+      - No need for labeled training data
+      - No overfitting concerns
+
+   4. REGULATORY COMPLIANCE
+      - Aligns with industry standards (PSI widely used in finance)
+      - Auditable decision logic
+      - Traceable calculations
+
+   5. NO DATA REQUIREMENTS
+      - Don't need historical data for training
+      - Work with any model output distribution
+      - Framework-agnostic (TensorFlow, PyTorch, scikit-learn, etc.)
+
+Q4: How does drift detection work?
+----------------------------------
+A: DriftGuardAI detects drift in 3 steps:
+
+   STEP 1: ESTABLISH BASELINE
+   - Collect first 100 predictions after model deployment
+   - Used as "expected" distribution
+   - Stored in database with model version
+
+   STEP 2: MONITOR RECENT DATA
+   - Continuously collect production predictions
+   - Maintain sliding window of last 100 predictions
+   - Configuration: DRIFT_WINDOW_SIZE=100
+
+   STEP 3: CALCULATE DRIFT METRICS
+   - For each feature: compute PSI(baseline, recent)
+   - For each feature: compute KS(baseline, recent)
+   - For model output: compute PSI and KS on predictions
+
+   EXAMPLE:
+   Baseline: [0.1, 0.2, 0.15, 0.3, ...] (100 samples)
+   Recent: [0.5, 0.6, 0.55, 0.7, ...] (100 samples)
+   PSI = 0.35 (≥ 0.25 → DRIFT DETECTED) ⚠️
+   KS = 0.45 (≥ 0.20 → DRIFT DETECTED) ⚠️
+   drift_flag = TRUE
+
+   TRIGGER: Automatically called after each prediction logged
+
+Q5: What is the Model Risk Index (MRI)?
+----------------------------------------
+A: MRI is a composite risk score (0-100) that combines drift and fairness:
+
+   CALCULATION:
+   MRI = (drift_component * 0.60) + (fairness_component * 0.40)
+
+   drift_component = ((avg_psi * 60) + (avg_ks * 40)) / 1.6
+     - Normalized to 0-100
+     - Updated every drift calculation
+     - Reflects distribution changes
+
+   fairness_component = disparity_score * 100
+     - Normalized to 0-100
+     - Updated after fairness evaluation
+     - Reflects bias in decisions
+
+   EXAMPLE:
+   avg_psi = 0.30, avg_ks = 0.25, disparity = 0.12
+   drift_component = ((0.30*60) + (0.25*40)) / 1.6 = 17.5
+   fairness_component = 0.12 * 100 = 12.0
+   MRI = (17.5 * 0.60) + (12 * 0.40) = 10.5 + 4.8 = 15.3
+
+   RISK LEVELS:
+   MRI < 30: Low Risk (Green) ✅
+   MRI 30-60: Moderate Risk (Yellow) ⚠️
+   MRI 60-80: High Risk (Orange) 🔴
+   MRI > 80: Critical Risk (Red) 🔴🔴
+
+Q6: How does fairness monitoring work?
+--------------------------------------
+A: Fairness is monitored by detecting bias across demographic groups:
+
+   PROCESS:
+   1. Specify protected attribute (e.g., "gender", "age_group")
+   2. Group predictions by attribute value
+   3. Calculate approval rate per group
+   4. Compute disparity = max(rate) - min(rate)
+   5. Flag if disparity > threshold (0.10)
+
+   EXAMPLE - LOAN APPROVAL MODEL:
+   Protected Attribute: "gender"
+   
+   Group "M": 500 predictions, 350 approvals → 70% approval
+   Group "F": 500 predictions, 300 approvals → 60% approval
+   Disparity: 0.70 - 0.60 = 0.10 (equals threshold)
+   fairness_flag: TRUE → Model flagged as biased ⚠️
+
+   IMPACT ON MRI:
+   - Disparity contributes 40% to overall risk
+   - High disparity = higher MRI = governance restrictions
+   - Helps ensure fair model deployments
+
+Q7: How does governance policy work?
+------------------------------------
+A: Governance policies define deployment rules:
+
+   CONFIGURATION:
+   {
+     "max_allowed_mri": 80.0,  // Hard block threshold
+     "max_allowed_disparity": 0.15,  // Fairness block
+     "approval_required_above_mri": 60.0  // Soft threshold
+   }
+
+   DECISION LOGIC:
+   1. IF risk_score > max_allowed_mri → BLOCKED (❌ Cannot deploy)
+   2. ELIF disparity > max_allowed_disparity → AT_RISK (⚠️)
+   3. ELIF risk_score > approval_required_above_mri → AT_RISK (⚠️)
+   4. ELSE → APPROVED (✅ Can deploy)
+
+   DEPLOYMENT FLOW:
+   User requests: POST /models/{id}/deploy
+   
+   ├─ Model status = BLOCKED?
+   │  └─ No override? → Return 403 Forbidden
+   │  └─ Admin override? → Allow deployment (audit logged)
+   │
+   └─ Model status = AT_RISK?
+      └─ No override? → Can deploy (with warning)
+      └─ Admin override? → Deploy with full authority
+
+Q8: What data is needed to use DriftGuardAI?
+--------------------------------------------
+A: Minimal data requirements:
+
+   REQUIRED:
+   1. Model metadata (name, version, accuracy)
+   2. Production predictions (model output)
+   3. Input features (for drift detection)
+   4. Protected attributes (for fairness, optional)
+
+   NOT REQUIRED:
+   - Historical training data
+   - Ground truth labels (monitoring works without)
+   - Specific feature types (JSON flexible)
+   - Labeled fairness groups (auto-detected)
+
+   EXAMPLE PREDICTION LOG:
+   {
+     "model_id": 123,
+     "input_features": {
+       "age": 35,
+       "gender": "M",
+       "income": 75000
+     },
+     "prediction": 0.82,  // Model output probability
+     "actual_outcome": 1.0  // Optional ground truth
+   }
+
+   MINIMUM: 100 predictions to establish baseline
+   RECOMMENDED: 1000+ for stable drift detection
+
+Q9: How scalable is DriftGuardAI?
+---------------------------------
+A: Designed for enterprise scale:
+
+   CAPACITY:
+   - Thousands of models monitored
+   - Millions of predictions tracked
+   - Real-time drift alerts
+   - Sub-second API response times
+
+   BOTTLENECKS:
+   - Database indexes optimized (model_id, timestamp)
+   - No N+1 queries in service layer
+   - Aggregation queries use SQL (not Python loops)
+   - Batch prediction logging supported
+
+   DEPLOYMENT:
+   - Horizontal scaling: Multiple API instances
+   - Load balancing: Distribute requests
+   - Database: PostgreSQL supports 100K+ transactions/sec
+   - Caching: Future enhancement for dashboard
+
+   PERFORMANCE TARGETS:
+   - API endpoint latency: <100ms
+   - Drift calculation: <500ms per model
+   - Dashboard aggregation: <200ms
+   - Batch simulation: <1000ms
+
+Q10: What about privacy and data security?
+------------------------------------------
+A: DriftGuardAI implements security best practices:
+
+   AUTHENTICATION:
+   - JWT tokens (30-minute expiration)
+   - bcrypt password hashing (12 rounds)
+   - Role-based access control (user/admin)
+
+   ENCRYPTION:
+   - Database: PostgreSQL with encryption at rest
+   - Transport: HTTPS recommended for production
+   - Secrets: Stored in .env, never in code/git
+
+   DATA MINIMIZATION:
+   - Only features needed for monitoring
+   - Predictions: Can be anonymized
+   - No raw customer data required
+   - Input features: JSON object (fully configurable)
+
+   COMPLIANCE:
+   - GDPR: No personal data retention required
+   - CCPA: Model output can be aggregated
+   - SOC 2: Audit logging on deployments
+   - HIPAA: Works with de-identified data
+
+Q11: Can it work with any machine learning framework?
+------------------------------------------------------
+A: YES - completely framework agnostic:
+
+   WORKS WITH:
+   - TensorFlow models
+   - PyTorch models
+   - scikit-learn models
+   - XGBoost models
+   - LightGBM models
+   - Custom models
+   - Any model producing numeric output
+
+   INTEGRATION:
+   - No model file needed (monitoring predictions only)
+   - Works post-deployment
+   - Only needs: model_id, input_features, prediction_output
+   - Can wrap any prediction endpoint
+
+   EXAMPLE - TENSORFLOW MODEL:
+   model = tf.keras.models.load_model('fraud_model.h5')
+   
+   for user_data in production_stream:
+     prediction = model.predict([user_data])
+     
+     log_prediction(
+       model_id=123,
+       input_features=user_data,
+       prediction=prediction[0],
+       actual_outcome=user_data.fraud_label
+     )
+   
+   # DriftGuardAI automatically monitors drift/fairness
+
+Q12: What's the difference between Phase 1-6 and Phase 7?
+---------------------------------------------------------
+A: Phase 7 adds executive capabilities while maintaining Phase 1-6 stability:
+
+   PHASE 1-5: Core functionality (unchanged by Phase 7)
+   - Authentication
+   - Model registry
+   - Drift detection
+   - Risk scoring
+   - Fairness monitoring
+   - Governance policies
+   - Deployment control
+
+   PHASE 6: AI intelligence layer (independent)
+   - RunAnywhere SDK integration
+   - AI-powered explanations
+   - Risk forecasting
+   - Compliance summaries
+   - Optional (works without)
+
+   PHASE 7: Executive tools (read-only, non-invasive)
+   - Executive dashboard
+   - Risk/deployment trends
+   - Compliance distribution
+   - Governance simulation (sandbox)
+   - Zero impact on production
+   - All data from Phase 1-5 database
+   - New endpoints only (no modifications)
+
+   INTEGRATION:
+   Phase 7 READS from Phase 1-5
+   Phase 7 DOES NOT MODIFY Phase 1-5
+   Phase 7 CAN USE Phase 6 (optional)
+
+Q13: How do you handle model retraining/updates?
+-----------------------------------------------
+A: DriftGuardAI supports model versioning:
+
+   NEW MODEL VERSION:
+   POST /models
+   {
+     "model_name": "fraud_detection",
+     "version": "2.0.0",  // Different version
+     "training_accuracy": 0.96
+   }
+   
+   Results in new model_id (123 → 124)
+   - Each version has separate drift baseline
+   - Each version has separate risk history
+   - Each version has separate governance evaluation
+
+   TRANSITION WORKFLOW:
+   1. Deploy v2.0.0 (new model_id)
+   2. Run A/B test in parallel
+   3. Monitor drift separately for both
+   4. Switch traffic to v2.0.0
+   5. Archive v1.0.0 (keep historical data)
+
+   DRIFT BASELINE RESET:
+   - v2.0.0 starts with clean baseline
+   - First 100 v2.0.0 predictions = baseline
+   - v2.0.0 drift independent of v1.0.0
+   - No "cold start" risk
+
+Q14: What alerts and notifications are available?
+-------------------------------------------------
+A: DriftGuardAI provides monitoring, notification via API response:
+
+   CURRENT (Synchronous):
+   - API endpoint returns status
+   - Client application handles notifications
+   - Real-time dashboard shows status
+
+   FUTURE (Phase 8+):
+   - Email alerts on drift detection
+   - Slack/Teams webhooks
+   - PagerDuty integration
+   - SMS alerts for critical
+
+   ALERT TYPES:
+   1. DRIFT_DETECTED
+      - Trigger: PSI ≥ 0.25 OR KS ≥ 0.20
+      - Severity: WARNING
+      - Action: Review recent data
+
+   2. FAIRNESS_VIOLATION
+      - Trigger: disparity > threshold
+      - Severity: WARNING/CRITICAL
+      - Action: Investigate bias, retrain if needed
+
+   3. MODEL_BLOCKED
+      - Trigger: MRI > max_allowed_mri
+      - Severity: CRITICAL
+      - Action: Cannot deploy, requires intervention
+
+   4. APPROVAL_REQUIRED
+      - Trigger: MRI > approval_required_above_mri
+      - Severity: INFO/WARNING
+      - Action: Admin review before deployment
+
+Q15: How is this different from other MLOps platforms?
+------------------------------------------------------
+A: DriftGuardAI focuses specifically on governance:
+
+   UNIQUE ASPECTS:
+   1. Fairness-first: Bias detection integral (not add-on)
+   2. Governance-driven: Policy-based deployment control
+   3. Lightweight: Statistical methods (not ML-heavy)
+   4. Framework-agnostic: Works with any model type
+   5. Self-service: No model upload required
+   6. Interpretable: All decisions auditable/explainable
+
+   COMPARISON:
+   
+   MLflow / Kubeflow:
+   - Model versioning + experiment tracking
+   - DriftGuardAI: Model monitoring + governance
+   - Can work together
+
+   Fiddler AI / Clearly AI:
+   - Explainability platforms
+   - DriftGuardAI: Drift + fairness + governance
+   - Different focus
+
+   Evidently AI:
+   - Drift detection
+   - DriftGuardAI: Drift + fairness + governance + enforcement
+   - DriftGuardAI has deployment control
+
+   Superwise / Aporia:
+   - ML monitoring + alerting
+   - DriftGuardAI: Monitoring + governance + fairness
+   - DriftGuardAI forces compliance
+
+Q16: How does the simulation/sandbox mode work?
+-----------------------------------------------
+A: Phase 7 simulation allows "what-if" testing:
+
+   USE CASES:
+   1. Test policy thresholds before deployment
+   2. Evaluate impact of policy changes
+   3. Scenario analysis (batch)
+   4. Training tool for governance teams
+
+   HOW IT WORKS:
+   - Input: Hypothetical risk_score + fairness_score
+   - No database changes
+   - No audit logging triggered
+   - Response marked as "simulation": true
+   - Uses active governance policy rules
+
+   EXAMPLE - TEST NEW POLICY:
+   POST /simulation/governance-check
+   {
+     "risk_score": 75.0,
+     "fairness_score": 0.08,
+     "override": false
+   }
+   
+   Response:
+   {
+     "would_pass": true,
+     "reason": "Risk score 75 < max allowed 80",
+     "compliance_grade": "C",
+     "simulation": true  // Marked as simulation
+   }
+
+   BATCH TESTING:
+   POST /simulation/batch-governance-check
+   [
+     {"risk_score": 75, "fairness_score": 0.08},
+     {"risk_score": 85, "fairness_score": 0.12},
+     {"risk_score": 50, "fairness_score": 0.05}
+   ]
+   
+   Results: 2/3 would pass (66.7% pass rate)
+
+Q17: What's the tech stack and why?
+-----------------------------------
+A: Chosen for production reliability:
+
+   BACKEND:
+   - FastAPI: Modern, fast, automatic API docs (Swagger)
+   - SQLAlchemy 2.0: ORM, type hints, database abstraction
+   - PostgreSQL: ACID compliance, indexes, JSON support
+   - Uvicorn: ASGI server, efficient async I/O
+
+   FRONTEND:
+   - React 19: Component-based, large ecosystem
+   - TypeScript: Type safety, better IDE support
+   - Vite: Fast build tool, hot module replacement
+   - Axios: HTTP client, interceptors for auth
+
+   DATA/ML:
+   - NumPy: Numerical computing, arrays
+   - SciPy: Statistical tests (PSI, KS)
+   - No TensorFlow/PyTorch: Not needed for monitoring
+
+   HOSTING:
+   - Works on any server (Linux/Windows/Mac)
+   - Docker-ready
+   - Vercel (frontend)
+   - Any Python hosting (backend)
+
+Q18: How do you ensure data quality in monitoring?
+--------------------------------------------------
+A: DriftGuardAI includes data validation:
+
+   INPUT VALIDATION:
+   - Predictions: 0-1 for classification, or unrestricted
+   - Features: Any numeric/string values
+   - Protected attributes: String categorical values
+   - Missing values: Handled gracefully (skipped)
+
+   BASELINE QUALITY:
+   - Requires 100+ predictions before drift detection
+   - Automatic baseline establishment
+   - Baseline saved per model version
+
+   OUTLIER HANDLING:
+   - PSI/KS tests are robust to outliers
+   - Histogram binning handles extreme values
+   - Clamped to [0, 100] range
+
+   NULL/MISSING HANDLING:
+   - Predictions with missing features: Logged but excluded from drift
+   - Features with sparse data: Excluded from analysis
+   - Protected attributes with missing values: Separate "unknown" group
+
+Q19: Can DriftGuardAI detect all types of drift?
+-----------------------------------------------
+A: Detects most common drift types:
+
+   DETECTS:
+   ✅ Data Drift (covariate shift)
+      - Input feature distribution changes
+      - Detected via: PSI and KS tests
+
+   ✅ Concept Drift (target shift)
+      - Relationship between features and output changes
+      - Detected via: PSI/KS on predictions, fairness changes
+
+   ✅ Fairness Drift
+      - Model decisions become biased over time
+      - Detected via: Disparity score changes
+
+   ✅ Temporal Drift
+      - Performance changes due to time (e.g., seasonality)
+      - Can be detected by monitoring trends
+
+   NOT DETECTS:
+   ❌ Performance Drift (directly)
+      - Requires: Ground truth labels (actual outcomes)
+      - Workaround: Can monitor actual_outcome field
+
+   ❌ Model Architecture Changes
+      - Works post-deployment only
+      - Can't detect which model is running
+
+   ❌ Adversarial Attacks
+      - Requires: Specialized detection systems
+      - DriftGuardAI detects aftermath (distribution change)
+
+Q20: What's the implementation timeline?
+---------------------------------------
+A: DriftGuardAI is FULLY IMPLEMENTED - Version 7.0.0
+
+   COMPLETED PHASES:
+   ✅ Phase 1: Authentication & Model Registry
+      - User accounts, JWT tokens
+      - Model CRUD operations
+      - Status: Complete
+
+   ✅ Phase 2: Drift Detection & Risk Scoring
+      - PSI and KS statistics
+      - Model Risk Index (MRI) calculation
+      - Status: Complete
+
+   ✅ Phase 3: Fairness Monitoring
+      - Disparity detection
+      - Protected attribute grouping
+      - MRI fairness component (40% weight)
+      - Status: Complete
+
+   ✅ Phase 4: Governance Foundations (Merged with Phase 5)
+      - Status: Complete
+
+   ✅ Phase 5: Governance Policy & Deployment Control
+      - Policy CRUD, enforcement
+      - Deployment blocking/approval
+      - Admin overrides
+      - Status: Complete
+
+   ✅ Phase 6: RunAnywhere SDK Intelligence
+      - AI explanations, risk forecasting
+      - Compliance summaries
+      - Optional integration
+      - Status: Complete
+
+   ✅ Phase 7: Executive Command Center
+      - Executive dashboard
+      - Risk/deployment trends
+      - Compliance distribution
+      - Governance simulation sandbox
+      - Status: Complete & Hackathon-Ready
+
+   DEPLOYMENT STATUS: PRODUCTION READY
+
+================================================================================
+SECTION 10: PRODUCTION DEPLOYMENT GUIDE
+================================================================================
+
+10.1 ENVIRONMENT SETUP
+---------------------
+
+1. Install Dependencies:
+   Backend:
+     cd backend
+     pip install -r requirements.txt
+
+   Frontend:
+     npm install
+
+2. Configure Environment:
+   Backend (.env):
+     DATABASE_URL=postgresql://user:pass@localhost:5432/driftguard
+     SECRET_KEY=<generate-32-char-random-string>
+     DRIFT_WINDOW_SIZE=100
+     PSI_THRESHOLD=0.25
+     KS_THRESHOLD=0.2
+     FAIRNESS_THRESHOLD=0.1
+
+3. Initialize Database:
+   python backend/app/main.py
+   # Tables created automatically
+
+4. Seed Default Policy:
+   cd backend
+   python -m scripts.seed_default_policy
+
+10.2 STARTING THE APPLICATION
+-----------------------------
+
+Terminal 1 - Backend:
+  cd backend
+  uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+Terminal 2 - Frontend:
+  npm run dev
+  # Access at http://localhost:5173
+
+10.3 VERIFICATION CHECKLIST
+---------------------------
+
+✅ Database: Create model, check model_registry table
+✅ Authentication: Login, verify JWT token in localStorage
+✅ Drift: Log predictions, verify drift_metrics created
+✅ Risk: Check risk_history populated with MRI scores
+✅ Fairness: Evaluate fairness, verify disparity calculated
+✅ Governance: Test policy, verify governance decision
+✅ Dashboard: View command center, verify aggregations
+✅ Simulation: Test governance simulation, verify sandbox
+
+10.4 TROUBLESHOOTING
+-------------------
+
+Issue: Database connection error
+  Solution: Verify DATABASE_URL, PostgreSQL running
+
+Issue: JWT authentication fails
+  Solution: Check SECRET_KEY in .env, 32+ characters
+
+Issue: Drift metrics not calculated
+  Solution: Ensure 100+ predictions logged for model
+
+Issue: Dashboard shows no data
+  Solution: Verify risk_history table has entries
+
+Issue: Simulation results blocked incorrectly
+  Solution: Check active governance policy thresholds
+
+================================================================================
+END OF TECHNICAL DOCUMENTATION
+================================================================================
+
+Document Version: 1.0
+Last Updated: February 24, 2026
+Status: Production Ready - Phase 7 Complete
+Maintained By: OpenCode AI
+Contact: hackathon-support@driftguardai.com

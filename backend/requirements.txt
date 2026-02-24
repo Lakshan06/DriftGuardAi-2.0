@@ -1,0 +1,22 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+pydantic==2.5.3
+pydantic-settings==2.1.0
+pydantic[email]==2.5.3
+email-validator==2.1.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+
+# Phase 2: Drift Detection & Risk Analysis
+numpy==1.26.3
+scipy==1.11.4
+
+# Phase 6: RunAnywhere SDK Integration (OPTIONAL)
+# Note: runanywhere-sdk is not available on PyPI
+# To use Phase 6 features, install from source:
+#   pip install git+https://github.com/RunanywhereAI/runanywhere-sdks.git@main#egg=runanywhere-sdk
+# 
+# If not installed, Phase 6 endpoints gracefully fall back to static responses

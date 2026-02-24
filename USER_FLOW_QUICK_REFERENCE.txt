@@ -1,0 +1,271 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                  DriftGuardAI - USER FLOW QUICK REFERENCE                    ║
+║                         Complete Step-by-Step Guide                          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════
+🔐 FLOW #1: AUTHENTICATION & LOGIN
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 1: User opens app
+  └─ App checks localStorage for authToken
+  
+Step 2a: Token exists (returning user)
+  ├─ setIsAuthenticated(true)
+  └─ Show Dashboard + Navbar + Sidebar
+
+Step 2b: No token (new user)
+  └─ Show LoginPage
+
+Step 3: User enters credentials
+  ├─ Email: demo@driftguardai.com
+  └─ Password: ••••••••••
+
+Step 4: Submit form
+  ├─ Validate inputs (not empty)
+  ├─ POST /api/auth/login
+  └─ Backend verifies user + password
+
+Step 5: Token received
+  ├─ Store in localStorage
+  ├─ setIsAuthenticated(true)
+  └─ navigate('/dashboard')
+
+Step 6: Dashboard loads
+  └─ User ready to use app
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 FLOW #2: VIEW DASHBOARD & MODELS
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 1: User lands on /dashboard
+  └─ DashboardPage component mounts
+
+Step 2: Load models
+  ├─ useEffect triggers
+  ├─ GET /api/models
+  └─ Backend queries ModelRegistry
+
+Step 3: Backend processing
+  ├─ Verify JWT token (authentication)
+  ├─ Query all models
+  ├─ Get latest RiskHistory for each
+  ├─ Calculate risk scores
+  └─ Return model list
+
+Step 4: Display models
+  ├─ setModels(response.data)
+  ├─ Render grid of model cards
+  └─ Each card shows:
+     ├─ Model name
+     ├─ Status (deployed, draft, at_risk, blocked)
+     ├─ Version
+     ├─ Risk score (color-coded)
+     └─ "View Details" button
+
+Step 5: User interaction
+  └─ User clicks "View Details →" on a model
+     └─ navigate('/model/{modelId}')
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 FLOW #3: MODEL DEPLOYMENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 1: User on model detail page
+  └─ Sees all model metrics and deployment status
+
+Step 2: User clicks "Deploy Model"
+  ├─ Modal appears for confirmation
+  └─ Behind scenes: governance check starts
+
+Step 3: Backend evaluates governance
+  ├─ Get active policy thresholds
+  ├─ Get model's latest risk & fairness scores
+  ├─ Apply rules:
+  │  ├─ IF risk > max_allowed → BLOCKED
+  │  ├─ IF disparity > max_disparity → AT_RISK
+  │  ├─ IF risk > approval_threshold → AT_RISK
+  │  └─ ELSE → APPROVED
+  └─ Return status
+
+Step 4a: Result = APPROVED ✅
+  ├─ Show: "✅ Model approved for deployment"
+  ├─ User clicks: "Deploy"
+  ├─ POST /models/{id}/deploy
+  ├─ Backend updates model.status = "deployed"
+  ├─ Response: "Model deployed successfully"
+  └─ Show: Success notification
+
+Step 4b: Result = AT_RISK ⚠️
+  ├─ Show: "⚠️ Model at risk, requires approval"
+  ├─ Options:
+  │  ├─ Cancel
+  │  └─ "Override & Deploy" (Admin only)
+  ├─ If override clicked:
+  │  ├─ Ask for justification text
+  │  ├─ POST /models/{id}/deploy?override=true
+  │  ├─ Store override reason in audit log
+  │  └─ Deploy anyway
+  └─ Success notification
+
+Step 4c: Result = BLOCKED ❌
+  ├─ Show: "❌ Deployment blocked"
+  ├─ Reason: "Risk score exceeds maximum allowed"
+  ├─ Disable deploy button
+  └─ Options: Fix model or adjust policy
+
+Step 5: Audit trail updated
+  └─ User can see deployment in /audit page
+
+═══════════════════════════════════════════════════════════════════════════════
+⚖️ FLOW #4: GOVERNANCE POLICY MANAGEMENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 1: User clicks "Governance" nav
+  ├─ navigate('/governance')
+  └─ GovernancePage loads
+
+Step 2: Load policies
+  ├─ GET /api/governance/policies
+  └─ Display active + all other policies
+
+Step 3: View active policy
+  ├─ Highlighted in green
+  ├─ Shows thresholds:
+  │  ├─ Max Risk (MRI): 80
+  │  ├─ Approval Required Above: 60
+  │  └─ Max Disparity: 15
+  └─ Actions: Edit, View Rules, Deactivate
+
+Step 4: Create new policy
+  ├─ User clicks "Create New Policy"
+  ├─ Modal opens with form
+  ├─ User fills:
+  │  ├─ Name: "Staging Policy"
+  │  ├─ Max MRI: 85
+  │  ├─ Approval Threshold: 65
+  │  ├─ Max Disparity: 20
+  │  └─ Active: No
+  ├─ User clicks "Create"
+  ├─ POST /governance/policies
+  └─ New policy appears in list
+
+Step 5: Activate policy
+  ├─ User clicks "Activate" on Staging Policy
+  ├─ PUT /governance/policies/{id}
+  ├─ Backend deactivates all others, activates this
+  ├─ Response: "Policy activated"
+  └─ UI updates: Staging now green, others gray
+
+Step 6: Deployment uses new policy
+  └─ Next model deployment uses new thresholds
+
+═══════════════════════════════════════════════════════════════════════════════
+🎮 FLOW #5: EXECUTIVE COMMAND CENTER
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 1: User clicks "Command Center" nav
+  ├─ navigate('/command-center')
+  └─ CommandCenterPage loads
+
+Step 2: Load dashboard (parallel requests)
+  ├─ GET /dashboard/summary
+  ├─ GET /dashboard/risk-trends?days=30
+  ├─ GET /dashboard/deployment-trends?days=30
+  ├─ GET /dashboard/compliance-distribution
+  └─ GET /dashboard/executive-summary
+  
+Step 3: Backend aggregation
+  ├─ Summary: COUNT models, at-risk, compliance
+  ├─ Risk Trends: GROUP BY date, AVG/MAX risk
+  ├─ Deployment Trends: COUNT by status
+  ├─ Compliance: Bucket models by grade
+  └─ Executive: Combine + AI narrative (if SDK available)
+
+Step 4: Display dashboard
+  ├─ Executive Narrative card:
+  │  ├─ AI-generated insight
+  │  └─ "Systems operating optimally"
+  ├─ Summary metrics:
+  │  ├─ Total Models: 42
+  │  ├─ At Risk: 3
+  │  ├─ Deployed: 28
+  │  └─ Compliance Score: 87.5% (green)
+  ├─ Charts:
+  │  ├─ Risk Trends (line/table)
+  │  ├─ Deployment Trends (line/table)
+  │  └─ Compliance Distribution (bar chart)
+  └─ Simulation Panel
+
+Step 5: Change time range
+  ├─ User selects "Last 90 Days"
+  ├─ setTimeRange(90)
+  ├─ useEffect triggers with new timeRange
+  ├─ All 5 API calls execute with days=90
+  └─ Charts update to 90-day view
+
+═══════════════════════════════════════════════════════════════════════════════
+🧪 FLOW #6: GOVERNANCE SIMULATION
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 1: User on Command Center
+  └─ Scroll to "Governance Simulation Panel"
+
+Step 2: Adjust simulation parameters
+  ├─ Drag Risk slider to 65%
+  ├─ Drag Fairness slider to 75%
+  ├─ Check Override checkbox
+  └─ setRiskScore(65), setFairnessScore(75), setOverride(true)
+
+Step 3: Click "Run Simulation"
+  ├─ POST /simulation/governance-check
+  ├─ Body: {risk_score: 65, fairness_score: 75, override: true}
+  └─ Backend (IN-MEMORY, NO DB WRITES)
+
+Step 4: Backend simulation logic
+  ├─ Get active policy
+  ├─ Calculate: disparity = 100 - 75 = 25
+  ├─ Apply rules:
+  │  ├─ Rule 1: 65 > 80? NO
+  │  ├─ Rule 2: 25 > 15? YES → AT_RISK
+  │  └─ With override? YES → PASS
+  └─ Return result
+
+Step 5: Display result
+  ├─ Status: [WOULD PASS] (green badge)
+  ├─ Grade: D (orange)
+  ├─ Reason: "Disparity exceeds limit. Override: true"
+  └─ Details table showing all thresholds
+
+Step 6: Try different scenario
+  ├─ Adjust sliders to Risk=95, Fairness=60
+  ├─ Uncheck Override
+  ├─ Run Simulation
+  ├─ Backend: 95 > 80? YES → BLOCKED
+  └─ Result: [WOULD FAIL] (red badge)
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 FLOW #7: AUDIT TRAIL
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 1: User clicks "Audit Trail" nav
+  ├─ navigate('/audit')
+  └─ AuditPage loads
+
+Step 2: Load audit events
+  ├─ GET /api/audit/trail
+  └─ Backend returns all events
+
+Step 3: Display audit log table
+  ├─ Columns:
+  │  ├─ Timestamp
+  │  ├─ User
+  │  ├─ Action (Deployment, Governance, Policy)
+  │  ├─ Model
+  │  └─ Details
+  └─ Rows: Each event
+
+Step 4: View event details
+  ├─ User clicks on event row
+  ├─ Expands to show full details:
+  │  ├─ Model 
