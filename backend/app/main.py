@@ -4,6 +4,7 @@ from app.api import auth, model_registry, logs, drift, risk, fairness, governanc
 from app.database.base import Base
 from app.database.session import engine, get_db
 from app.services import health_service, auth_service
+from app.core.logging_config import logger
 from datetime import datetime
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -74,7 +75,7 @@ async def startup_event():
                 role="admin"
             )
             auth_service.create_user(db, demo_user)
-            print(f"✓ Created demo user: {demo_user_email}")
+            logger.info(f"✓ Created demo user: {demo_user_email}")
         
         # Demo user 2
         test_user_email = "testuser@example.com"
@@ -86,11 +87,11 @@ async def startup_event():
                 role="ml_engineer"
             )
             auth_service.create_user(db, test_user)
-            print(f"✓ Created test user: {test_user_email}")
+            logger.info(f"✓ Created test user: {test_user_email}")
         
         db.close()
     except Exception as e:
-        print(f"Warning: Could not initialize demo users: {e}")
+        logger.warning(f"Could not initialize demo users: {e}")
 
 
 @app.get("/")

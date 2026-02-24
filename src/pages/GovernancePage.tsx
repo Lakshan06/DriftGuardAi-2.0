@@ -41,12 +41,16 @@ export function GovernancePage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [policiesRes, modelsRes] = await Promise.all([
+      const results = await Promise.allSettled([
         governanceAPI.getPolicies(),
         modelAPI.getModels(),
       ]);
-      setPolicies(policiesRes.data || []);
-      const modelsList = modelsRes.data.items || modelsRes.data.models || modelsRes.data || [];
+      
+      const policiesRes = results[0].status === 'fulfilled' ? results[0].value : null;
+      const modelsRes = results[1].status === 'fulfilled' ? results[1].value : null;
+      
+      setPolicies(policiesRes?.data || []);
+      const modelsList = modelsRes?.data?.items || modelsRes?.data?.models || modelsRes?.data || [];
       setModels(Array.isArray(modelsList) ? modelsList : []);
       setError('');
     } catch (err: any) {
@@ -127,7 +131,7 @@ export function GovernancePage() {
               <option value="">-- Choose a model --</option>
               {models.map((model) => (
                 <option key={model.id} value={model.id}>
-                  {model.name} (v{model.status})
+                  {model.name || 'Unknown'} (v{model.status || 'N/A'})
                 </option>
               ))}
             </select>
@@ -152,23 +156,23 @@ export function GovernancePage() {
               </StatusBadge>
             </div>
 
-            {evaluationResult.violations.length > 0 && (
+            {evaluationResult.violations && evaluationResult.violations.length > 0 && (
               <div className="violations">
                 <h4>Violations</h4>
                 <ul>
                   {evaluationResult.violations.map((violation, idx) => (
-                    <li key={idx}>❌ {violation}</li>
+                    <li key={idx}>❌ {violation || 'Unknown violation'}</li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {evaluationResult.recommendations.length > 0 && (
+            {evaluationResult.recommendations && evaluationResult.recommendations.length > 0 && (
               <div className="recommendations">
                 <h4>Recommendations</h4>
                 <ul>
                   {evaluationResult.recommendations.map((rec, idx) => (
-                    <li key={idx}>💡 {rec}</li>
+                    <li key={idx}>💡 {rec || 'No details available'}</li>
                   ))}
                 </ul>
               </div>

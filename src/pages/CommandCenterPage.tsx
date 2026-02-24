@@ -52,15 +52,8 @@ export function CommandCenterPage() {
       setComplianceDistribution(complianceRes?.data || { total_models: 0 });
       setExecutiveSummary(executiveRes?.data || { narrative: 'System status unavailable' });
 
-      // Check for specific errors
-      const failedRequests = results.filter(r => r.status === 'rejected');
-      if (failedRequests.length > 0) {
-        console.warn('Some dashboard requests failed:', failedRequests);
-      }
-
       setLoading(false);
     } catch (err: any) {
-      console.error('Dashboard load error:', err);
       setError('Failed to load dashboard data: ' + (err.message || 'Unknown error'));
       setLoading(false);
     }

@@ -37,7 +37,6 @@ export function DashboardPage() {
       // Verify token exists before making request
       const token = localStorage.getItem('authToken');
       if (!token) {
-        console.warn('No token found - redirecting to login');
         navigate('/login', { replace: true });
         return;
       }
@@ -48,15 +47,12 @@ export function DashboardPage() {
       setModels(Array.isArray(modelsList) ? modelsList : []);
       setRetryCount(0);
     } catch (err: any) {
-      console.error('Error fetching models:', err);
-      
       const errorMsg = err.message || 'Failed to load models';
       
       // Check if it's an auth error
       if (errorMsg.includes('Could not validate credentials') || 
           errorMsg.includes('Unauthorized') ||
           errorMsg.includes('401')) {
-        console.warn('Authentication error - clearing token and redirecting');
         localStorage.removeItem('authToken');
         localStorage.removeItem('userEmail');
         localStorage.removeItem('userName');
@@ -91,7 +87,6 @@ export function DashboardPage() {
       // Refresh the models list
       await fetchModels();
     } catch (err: any) {
-      console.error('Error registering model:', err);
       setError(err.message || 'Failed to register model');
     }
   };

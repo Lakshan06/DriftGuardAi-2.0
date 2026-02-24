@@ -36,12 +36,16 @@ export function AuditPage() {
   const fetchAuditData = async () => {
     try {
       setLoading(true);
-      const [deploymentsRes, auditRes] = await Promise.all([
+      const results = await Promise.allSettled([
         auditAPI.getDeploymentHistory(),
         auditAPI.getAuditTrail(),
       ]);
-      setDeploymentHistory(deploymentsRes.data.deployments || []);
-      setAuditTrail(auditRes.data.trail || []);
+      
+      const deploymentsRes = results[0].status === 'fulfilled' ? results[0].value : null;
+      const auditRes = results[1].status === 'fulfilled' ? results[1].value : null;
+      
+      setDeploymentHistory(deploymentsRes?.data?.deployments || []);
+      setAuditTrail(auditRes?.data?.trail || []);
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to load audit data');

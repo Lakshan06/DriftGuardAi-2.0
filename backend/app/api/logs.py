@@ -8,6 +8,7 @@ from app.models.model_registry import ModelRegistry
 from app.api.deps import get_current_active_user
 from app.models.user import User
 from app.services import drift_service, risk_service
+from app.core.logging_config import logger
 
 router = APIRouter(prefix="/logs", tags=["prediction-logs"])
 
@@ -54,7 +55,7 @@ def log_prediction(
         risk_service.create_risk_history_entry(db, log_data.model_id)
     except Exception as e:
         # Log error but don't fail the request
-        print(f"Error in drift/risk calculation: {str(e)}")
+        logger.error(f"Error in drift/risk calculation: {str(e)}", exc_info=True)
     
     return prediction_log
 

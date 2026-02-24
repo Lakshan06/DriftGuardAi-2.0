@@ -2,8 +2,6 @@ import axios, { AxiosError, AxiosResponse } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-console.log('API Base URL:', API_BASE_URL);
-
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -19,18 +17,12 @@ api.interceptors.request.use((config: any) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  console.log('Request:', {
-    url: config.url,
-    method: config.method,
-    headers: config.headers,
-  });
   return config;
 });
 
 // Response interceptor - handle errors
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log('Response:', response.status, response.data);
     return response;
   },
   (error: AxiosError<any>) => {
@@ -43,15 +35,8 @@ api.interceptors.response.use(
       
       errorMessage = errorData.detail || errorData.error || error.response.statusText || 'Server error';
       
-      console.error('API Error:', {
-        status,
-        data: errorData,
-        message: errorMessage,
-      });
-      
       // Handle 401 Unauthorized - clear token and redirect to login
       if (status === 401 || status === 403) {
-        console.warn('Authentication failed - clearing stored token');
         localStorage.removeItem('authToken');
         localStorage.removeItem('userEmail');
         localStorage.removeItem('userName');
@@ -66,11 +51,9 @@ api.interceptors.response.use(
     } else if (error.request) {
       // Request made but no response
       errorMessage = 'No response from server. Please check if the API is running.';
-      console.error('No response received:', error.request);
     } else {
       // Error in request setup
       errorMessage = error.message || 'Request failed';
-      console.error('Request setup error:', error.message);
     }
     
     const customError = new Error(errorMessage);
@@ -81,15 +64,12 @@ api.interceptors.response.use(
 export const authAPI = {
   login: async (email: string, password: string) => {
     try {
-      console.log('Attempting login with:', { email });
       const response = await api.post('/auth/login', { 
         email, 
         password 
       });
-      console.log('Login response:', response.data);
       return response;
     } catch (error: any) {
-      console.error('Login error:', error);
       throw error;
     }
   },
@@ -102,31 +82,24 @@ export const authAPI = {
 
 export const modelAPI = {
   getModels: () => {
-    console.log('Fetching models');
     return api.get('/models');
   },
   getModelById: (id: string) => {
-    console.log('Fetching model:', id);
     return api.get(`/models/${id}`);
   },
   createModel: (data: any) => {
-    console.log('Creating model:', data);
     return api.post('/models', data);
   },
   runSimulation: (id: string) => {
-    console.log('Running simulation for model:', id);
     return api.post(`/models/${id}/run-simulation`);
   },
   getSimulationStatus: (id: string) => {
-    console.log('Fetching simulation status for model:', id);
     return api.get(`/models/${id}/simulation-status`);
   },
   resetSimulation: (id: string) => {
-    console.log('Resetting simulation for model:', id);
     return api.post(`/models/${id}/reset-simulation`);
   },
   getModelDrift: async (id: string) => {
-    console.log('Fetching drift for model:', id);
     const response = await api.get(`/models/drift/${id}`);
     
     // Normalize drift metrics: map backend fields to frontend expectations
@@ -150,7 +123,6 @@ export const modelAPI = {
     return response;
   },
   getModelFairness: async (id: string) => {
-    console.log('Fetching fairness for model:', id);
     const response = await api.get(`/models/fairness/${id}`);
     
     // Normalize fairness metrics: map backend fields to frontend expectations
@@ -192,7 +164,6 @@ export const modelAPI = {
     };
   },
   getModelRiskHistory: async (id: string) => {
-    console.log('Fetching risk history for model:', id);
     const response = await api.get(`/models/risk/${id}`);
     
     // Normalize risk history: map risk_score -> score for Recharts
@@ -218,34 +189,27 @@ export const modelAPI = {
 
 export const governanceAPI = {
   getPolicies: () => {
-    console.log('Fetching policies');
     return api.get('/governance/policies/');
   },
   createPolicy: (data: any) => {
-    console.log('Creating policy:', data);
     return api.post('/governance/policies/', data);
   },
   updatePolicy: (id: string, data: any) => {
-    console.log('Updating policy:', id, data);
     return api.put(`/governance/policies/${id}/`, data);
   },
   evaluateGovernance: (modelId: string) => {
-    console.log('Evaluating governance for model:', modelId);
     return api.post(`/governance/models/${modelId}/evaluate/`, {});
   },
   deployModel: (modelId: string, data: any) => {
-    console.log('Deploying model:', modelId, data);
     return api.post(`/governance/models/${modelId}/deploy/`, data);
   },
 };
 
 export const auditAPI = {
   getDeploymentHistory: (modelId?: string) => {
-    console.log('Fetching deployment history', { modelId });
     return api.get('/audit/deployments/', { params: { model_id: modelId } });
   },
   getAuditTrail: (modelId?: string) => {
-    console.log('Fetching audit trail', { modelId });
     return api.get('/audit/trail/', { params: { model_id: modelId } });
   },
 };

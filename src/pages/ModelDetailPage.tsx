@@ -24,15 +24,26 @@ interface RiskDataPoint {
 }
 
 interface DriftMetrics {
-  feature_name: string;
-  drift_score: number;
-  threshold: number;
+  feature_name?: string;
+  name?: string;
+  psi_value?: number;
+  ks_statistic?: number;
+  drift_score?: number;
+  threshold?: number;
+  drift_detected?: boolean;
+  timestamp?: string;
 }
 
 interface FairnessMetrics {
-  protected_group: string;
-  demographic_parity: number;
-  equalized_odds: number;
+  protected_group?: string;
+  group_name?: string;
+  protected_attribute?: string;
+  demographic_parity?: number;
+  equalized_odds?: number;
+  approval_rate?: number;
+  disparity_score?: number;
+  fairness_flag?: boolean;
+  timestamp?: string;
 }
 
 interface GovernanceStatus {
@@ -91,10 +102,8 @@ export function ModelDetailPage() {
       const response = await modelAPI.getSimulationStatus(modelId!);
       if (response?.data) {
         setSimulationStatus(response.data);
-        console.log('Simulation status:', response.data);
       }
     } catch (err: any) {
-      console.warn('Failed to fetch simulation status:', err.message);
       // Not critical, continue without status
     }
   };
@@ -118,43 +127,70 @@ export function ModelDetailPage() {
         throw new Error('Failed to load model data');
       }
 
-      // Safely set risk history with default
-      const riskHistory = riskRes?.data?.history || [];
-      if (Array.isArray(riskHistory)) {
-        setRiskHistory(riskHistory);
-      } else {
-        console.warn('Risk history is not an array:', riskHistory);
+      // Safely set risk history with default - validate array and data shape
+      try {
+        const riskHistory = riskRes?.data?.history || [];
+        if (Array.isArray(riskHistory) && riskHistory.length > 0) {
+          // Validate and filter entries with proper timestamp and score
+          const validRiskHistory = riskHistory.filter(entry => 
+            entry && typeof entry === 'object' && 
+            (entry.timestamp || entry.score !== undefined)
+          );
+          setRiskHistory(validRiskHistory);
+        } else {
+          setRiskHistory([]);
+        }
+      } catch (e) {
         setRiskHistory([]);
       }
 
-      // Safely set drift metrics with default
-      const driftMetrics = driftRes?.data?.metrics || [];
-      if (Array.isArray(driftMetrics)) {
-        setDriftMetrics(driftMetrics);
-      } else {
-        console.warn('Drift metrics is not an array:', driftMetrics);
+      // Safely set drift metrics with default - validate array and data shape
+      try {
+        const driftMetrics = driftRes?.data?.metrics || [];
+        if (Array.isArray(driftMetrics) && driftMetrics.length > 0) {
+          // Validate and filter entries with required fields
+          const validDriftMetrics = driftMetrics.filter(metric => 
+            metric && typeof metric === 'object' && 
+            (metric.feature_name || metric.psi_value !== undefined || metric.ks_statistic !== undefined)
+          );
+          setDriftMetrics(validDriftMetrics);
+        } else {
+          setDriftMetrics([]);
+        }
+      } catch (e) {
         setDriftMetrics([]);
       }
 
-      // Safely set fairness metrics with default
-      const fairnessMetrics = fairnessRes?.data?.metrics || [];
-      if (Array.isArray(fairnessMetrics)) {
-        setFairnessMetrics(fairnessMetrics);
-      } else {
-        console.warn('Fairness metrics is not an array:', fairnessMetrics);
+      // Safely set fairness metrics with default - validate array and data shape
+      try {
+        const fairnessMetrics = fairnessRes?.data?.metrics || [];
+        if (Array.isArray(fairnessMetrics) && fairnessMetrics.length > 0) {
+          // Validate and filter entries with required fields
+          const validFairnessMetrics = fairnessMetrics.filter(metric => 
+            metric && typeof metric === 'object' && 
+            (metric.protected_group || metric.group_name || metric.protected_attribute)
+          );
+          setFairnessMetrics(validFairnessMetrics);
+        } else {
+          setFairnessMetrics([]);
+        }
+      } catch (e) {
         setFairnessMetrics([]);
       }
       
       // Fetch governance status
-      const govRes = await governanceAPI.evaluateGovernance(modelId!);
-      if (govRes?.data) {
-        setGovernanceStatus(govRes.data);
+      try {
+        const govRes = await governanceAPI.evaluateGovernance(modelId!);
+        if (govRes?.data) {
+          setGovernanceStatus(govRes.data);
+        }
+      } catch (e) {
+        // Continue without governance status
       }
       
       setError('');
     } catch (err: any) {
       const errorMsg = err?.response?.data?.detail || err?.message || 'Failed to load model data';
-      console.error('Model data fetch error:', errorMsg, err);
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -178,15 +214,16 @@ export function ModelDetailPage() {
       });
       
       if (response.ok) {
-        const data = await response.json();
-        if (data && typeof data === 'object') {
-          setAiExplanation(data);
+        try {
+          const data = await response.json();
+          if (data && typeof data === 'object') {
+            setAiExplanation(data);
+          }
+        } catch (parseErr) {
+          // Failed to parse JSON response
         }
-      } else {
-        console.debug(`AI explanation endpoint returned ${response.status}`);
       }
     } catch (err: any) {
-      console.debug('Failed to fetch AI explanation:', err.message);
       // This is optional, so we don't set error state
     } finally {
       setLoadingAi(false);
@@ -212,7 +249,6 @@ export function ModelDetailPage() {
       await fetchModelData();
     } catch (err: any) {
       const errorMsg = err?.response?.data?.detail || err?.message || 'Deployment failed';
-      console.error('Deployment error:', errorMsg, err);
       setError(errorMsg);
     }
   };
@@ -245,88 +281,38 @@ export function ModelDetailPage() {
       await fetchModelData();
     } catch (err: any) {
       const errorMsg = err?.response?.data?.detail || err?.message || 'Override deployment failed';
-      console.error('Override deployment error:', errorMsg, err);
       setError(errorMsg);
     }
   };
 
   // PHASE 2 & 3: Smart simulation handler with confirmation and graceful error handling
   const handleRunSimulation = async () => {
-    // Close confirmation modal
-    setShowSimulationConfirm(false);
-    
     try {
       setRunningSimulation(true);
-      setError('');
       setSimulationResult(null);
+      setError('');
       
       if (!modelId) {
         throw new Error('Model ID not found');
       }
       
-      console.log('Starting simulation for model:', modelId);
       const response = await modelAPI.runSimulation(modelId);
       
-      console.log('Raw simulation response:', response);
-      
-      // Validate response structure
-      if (!response) {
-        throw new Error('No response received from simulation endpoint');
-      }
-      
-      if (!response.data) {
-        console.error('Response structure:', response);
-        throw new Error('Simulation endpoint returned empty data');
-      }
-      
-      // Display result briefly
       setSimulationResult(response.data);
-      console.log('Simulation completed successfully:', response.data);
       
-      // Wait a moment for backend to fully commit
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // PHASE 5: Comprehensive data refresh orchestration
-      console.log('Refreshing all model data after simulation...');
-      await Promise.all([
-        fetchModelData(),
-        fetchSimulationStatus()
-      ]);
-      
-      // Clear simulation result after successful refresh
-      setTimeout(() => setSimulationResult(null), 5000);
-    } catch (err: any) {
-      // PHASE 3: Graceful error handling with structured notifications
-      console.error('=== SIMULATION ERROR ===');
-      console.error('Error object:', err);
-      console.error('Error response:', err?.response);
-      console.error('Error response data:', err?.response?.data);
-      console.error('Error message:', err?.message);
-      
-      // Extract the most detailed error message available
-      let errorMsg = 'Simulation failed';
-      
-      if (err?.response?.data?.detail) {
-        errorMsg = err.response.data.detail;
-        
-        // Special handling for duplication error
-        if (errorMsg.includes('already has prediction logs')) {
-          errorMsg = 'Simulation already executed. This model already has prediction logs. Use the Reset button to clear existing data before running a new simulation.';
-        }
-      } else if (err?.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      } else if (err?.response?.statusText) {
-        errorMsg = err.response.statusText;
-      } else if (err?.message) {
-        errorMsg = err.message;
+      // Show success message
+      if (response.data?.success) {
+        setShowSimulationConfirm(false);
+        // Automatically refresh data after 2 seconds to allow backend to complete
+        setTimeout(() => {
+          fetchModelData();
+          fetchSimulationStatus();
+        }, 2000);
       }
-      
-      console.error('Final error message:', errorMsg);
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.detail || err?.message || 'Failed to run simulation';
       setError(errorMsg);
-      setSimulationResult(null);
-      
-      // Refresh status to update UI state
-      await fetchSimulationStatus();
+      setSimulationResult({ success: false, message: errorMsg });
     } finally {
       setRunningSimulation(false);
     }
@@ -345,14 +331,11 @@ export function ModelDetailPage() {
         throw new Error('Model ID not found');
       }
       
-      console.log('Resetting simulation for model:', modelId);
       const response = await modelAPI.resetSimulation(modelId);
       
       if (!response || !response.data) {
         throw new Error('Invalid response from reset endpoint');
       }
-      
-      console.log('Reset completed:', response.data);
       
       // Show success message
       setSimulationResult({
@@ -371,7 +354,6 @@ export function ModelDetailPage() {
       
     } catch (err: any) {
       const errorMsg = err?.response?.data?.detail || err?.message || 'Failed to reset simulation';
-      console.error('Reset error:', errorMsg, err);
       setError(errorMsg);
     } finally {
       setResettingSimulation(false);
@@ -431,6 +413,23 @@ export function ModelDetailPage() {
           </div>
           <p>Version {model.version}</p>
         </div>
+        <button 
+          onClick={() => {
+            fetchModelData();
+            fetchSimulationStatus();
+          }}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#f0f0f0',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+          title="Refresh all data"
+        >
+          🔄 Refresh
+        </button>
       </div>
 
       {/* PHASE 7: Simulation Status Card */}
@@ -676,9 +675,9 @@ export function ModelDetailPage() {
         <div className="status-grid">
           <div className="status-item">
             <span className="label">Risk Score</span>
-            <span className={`value risk-${getRiskLevel((riskHistory?.[0]?.score) || 0)}`}>
+            <span className={`value risk-${getRiskLevel((riskHistory && riskHistory.length > 0 && riskHistory[0]?.score) ? Number(riskHistory[0].score) / 100 : 0)}`}>
               {riskHistory && riskHistory.length > 0 && riskHistory[0]?.score !== undefined
-                ? riskHistory[0].score.toFixed(2)
+                ? Number(riskHistory[0].score).toFixed(2)
                 : 'N/A'}
             </span>
           </div>
@@ -687,99 +686,227 @@ export function ModelDetailPage() {
 
       <div className="model-detail-section">
         <h2>📈 Risk Score History</h2>
-        {riskHistory && riskHistory.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={riskHistory}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="timestamp" />
-              <YAxis domain={[0, 100]} />
-              <Tooltip 
-                formatter={(value: any) => {
-                  if (typeof value === 'number') return value.toFixed(2);
-                  return value;
-                }}
-              />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="score" 
-                stroke="#8884d8" 
-                name="Risk Score"
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            <LoadingSpinner />
+            <p>Loading risk history...</p>
+          </div>
+        ) : riskHistory && riskHistory.length > 0 ? (
+          <div>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart 
+                data={riskHistory}
+                margin={{ top: 5, right: 30, left: 0, bottom: 50 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="timestamp" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis 
+                  domain={[0, 100]}
+                  label={{ value: 'Risk Score', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip 
+                  formatter={(value: any) => {
+                    if (typeof value === 'number') return value.toFixed(2);
+                    return value;
+                  }}
+                  labelFormatter={(label: any) => {
+                    if (label && typeof label === 'string') {
+                      try {
+                        return new Date(label).toLocaleString();
+                      } catch (e) {
+                        return label;
+                      }
+                    }
+                    return label;
+                  }}
+                />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="score" 
+                  stroke="#8884d8" 
+                  name="Risk Score"
+                  isAnimationActive={false}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+            <div style={{ marginTop: '16px', fontSize: '0.9em', color: '#666' }}>
+              <p>Current Risk Score: <strong>{riskHistory[0]?.score?.toFixed(2) || 'N/A'}</strong> / 100</p>
+              <p>Historical entries: {riskHistory.length}</p>
+            </div>
+          </div>
         ) : (
-          <p>No risk history available. Run a simulation to generate data.</p>
+          <div style={{
+            padding: '40px',
+            textAlign: 'center',
+            backgroundColor: '#f9f9f9',
+            borderRadius: '8px',
+            border: '1px solid #ddd'
+          }}>
+            <p style={{ color: '#666', marginBottom: '12px' }}>
+              📊 No risk history available. Run a simulation to generate data.
+            </p>
+            <small style={{ color: '#999' }}>
+              Once you run a simulation, this chart will display the risk score progression over time.
+            </small>
+          </div>
         )}
       </div>
 
       <div className="model-detail-section">
         <h2>🔍 Drift Metrics</h2>
-        {driftMetrics && driftMetrics.length > 0 ? (
-          <table className="metrics-table">
-            <thead>
-              <tr>
-                <th>Feature</th>
-                <th>Drift Score</th>
-                <th>Threshold</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {driftMetrics.map((metric, idx) => {
-                const driftScore = metric.drift_score || 0;
-                const threshold = metric.threshold || 0.1;
-                const isDriftDetected = driftScore > threshold;
-                
-                return (
-                  <tr key={idx}>
-                    <td>{metric.feature_name || 'unknown'}</td>
-                    <td>{driftScore.toFixed(3)}</td>
-                    <td>{threshold.toFixed(3)}</td>
-                    <td>
-                      <StatusBadge status={isDriftDetected ? 'alert' : 'active'}>
-                        {isDriftDetected ? 'Alert' : 'Normal'}
-                      </StatusBadge>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            <LoadingSpinner />
+            <p>Loading drift metrics...</p>
+          </div>
+        ) : driftMetrics && driftMetrics.length > 0 ? (
+          <div>
+            <table className="metrics-table">
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>PSI Value</th>
+                  <th>KS Statistic</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {driftMetrics.map((metric, idx) => {
+                  try {
+                    // Safe access to metric properties with fallbacks
+                    const featureName = metric?.feature_name || metric?.name || `Feature ${idx + 1}`;
+                    const psiValue = metric?.psi_value !== undefined ? Number(metric.psi_value) : 
+                                    metric?.drift_score !== undefined ? Number(metric.drift_score) : 0;
+                    const ksValue = metric?.ks_statistic !== undefined ? Number(metric.ks_statistic) :
+                                   metric?.threshold !== undefined ? Number(metric.threshold) : 0;
+                    const isDriftDetected = metric?.drift_detected === true || psiValue > 0.25;
+                    
+                    return (
+                      <tr key={idx}>
+                        <td>{featureName}</td>
+                        <td>{isNaN(psiValue) ? 'N/A' : psiValue.toFixed(4)}</td>
+                        <td>{isNaN(ksValue) ? 'N/A' : ksValue.toFixed(4)}</td>
+                        <td>
+                          <StatusBadge status={isDriftDetected ? 'alert' : 'active'}>
+                            {isDriftDetected ? '⚠️ Alert' : '✓ Normal'}
+                          </StatusBadge>
+                        </td>
+                      </tr>
+                    );
+                  } catch (e) {
+                    return (
+                      <tr key={idx}>
+                        <td colSpan={4} style={{ color: '#999', textAlign: 'center' }}>
+                          Error rendering metric
+                        </td>
+                      </tr>
+                    );
+                  }
+                })}
+              </tbody>
+            </table>
+            <div style={{ marginTop: '12px', fontSize: '0.9em', color: '#666' }}>
+              <p>Total features monitored: {driftMetrics.length}</p>
+            </div>
+          </div>
         ) : (
-          <p>No drift metrics available. Run a simulation to generate data.</p>
+          <div style={{
+            padding: '40px',
+            textAlign: 'center',
+            backgroundColor: '#f9f9f9',
+            borderRadius: '8px',
+            border: '1px solid #ddd'
+          }}>
+            <p style={{ color: '#666', marginBottom: '12px' }}>
+              📊 No drift metrics available. Run a simulation to generate data.
+            </p>
+            <small style={{ color: '#999' }}>
+              Drift metrics will display feature-level drift detection (PSI and KS statistics) after simulation.
+            </small>
+          </div>
         )}
       </div>
 
       <div className="model-detail-section">
         <h2>⚖️ Fairness Metrics</h2>
-        {fairnessMetrics && fairnessMetrics.length > 0 ? (
-          <table className="metrics-table">
-            <thead>
-              <tr>
-                <th>Protected Group</th>
-                <th>Demographic Parity</th>
-                <th>Equalized Odds</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fairnessMetrics.map((metric, idx) => {
-                const demographicParity = metric.demographic_parity || 0;
-                const equalizedOdds = metric.equalized_odds || 0;
-                
-                return (
-                  <tr key={idx}>
-                    <td>{metric.protected_group || 'unknown'}</td>
-                    <td>{demographicParity.toFixed(3)}</td>
-                    <td>{equalizedOdds.toFixed(3)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            <LoadingSpinner />
+            <p>Loading fairness metrics...</p>
+          </div>
+        ) : fairnessMetrics && fairnessMetrics.length > 0 ? (
+          <div>
+            <table className="metrics-table">
+              <thead>
+                <tr>
+                  <th>Protected Group</th>
+                  <th>Approval Rate</th>
+                  <th>Demographic Parity</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fairnessMetrics.map((metric, idx) => {
+                  try {
+                    // Safe access to metric properties with fallbacks
+                    const groupName = metric?.protected_group || metric?.group_name || metric?.protected_attribute || `Group ${idx + 1}`;
+                    const approvalRate = metric?.approval_rate !== undefined ? Number(metric.approval_rate) : 
+                                        metric?.demographic_parity !== undefined ? Number(metric.demographic_parity) : 0;
+                    const demographicParity = metric?.demographic_parity !== undefined ? Number(metric.demographic_parity) :
+                                             metric?.equalized_odds !== undefined ? Number(metric.equalized_odds) : 0;
+                    const isFairnessConcern = demographicParity > 0.25; // Threshold
+                    
+                    return (
+                      <tr key={idx}>
+                        <td>{groupName}</td>
+                        <td>{isNaN(approvalRate) ? 'N/A' : (approvalRate * 100).toFixed(1)}%</td>
+                        <td>{isNaN(demographicParity) ? 'N/A' : demographicParity.toFixed(4)}</td>
+                        <td>
+                          <StatusBadge status={isFairnessConcern ? 'alert' : 'active'}>
+                            {isFairnessConcern ? '⚠️ Concern' : '✓ Acceptable'}
+                          </StatusBadge>
+                        </td>
+                       </tr>
+                     );
+                   } catch (e) {
+                     return (
+                       <tr key={idx}>
+                         <td colSpan={4} style={{ color: '#999', textAlign: 'center' }}>
+                           Error rendering metric
+                         </td>
+                       </tr>
+                     );
+                   }
+                })}
+              </tbody>
+            </table>
+            <div style={{ marginTop: '12px', fontSize: '0.9em', color: '#666' }}>
+              <p>Total groups analyzed: {fairnessMetrics.length}</p>
+            </div>
+          </div>
         ) : (
-          <p>No fairness metrics available. Run a simulation to generate data.</p>
+          <div style={{
+            padding: '40px',
+            textAlign: 'center',
+            backgroundColor: '#f9f9f9',
+            borderRadius: '8px',
+            border: '1px solid #ddd'
+          }}>
+            <p style={{ color: '#666', marginBottom: '12px' }}>
+              📊 No fairness metrics available. Run a simulation to generate data.
+            </p>
+            <small style={{ color: '#999' }}>
+              Fairness metrics will display demographic parity and group-level outcomes after simulation.
+            </small>
+          </div>
         )}
       </div>
 
