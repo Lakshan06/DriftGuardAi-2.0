@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
+import logging
 from app.database.session import get_db
 from app.schemas.model_registry import ModelRegistryCreate, ModelRegistryUpdate, ModelRegistryResponse
 from app.services import model_registry_service
@@ -9,6 +10,8 @@ from app.services.model_simulation_service import ModelSimulationService
 from app.api.deps import get_current_active_user, require_roles
 from app.models.user import User
 from app.models.model_registry import ModelRegistry
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/models", tags=["models"])
 
@@ -272,7 +275,8 @@ def run_model_simulation(
     4. Generates 300 baseline predictions (normal distribution)
     5. Generates 200 shifted predictions (demonstrating drift)
     6. Triggers drift, fairness, and risk recalculation with full transaction safety
-    7. Returns comprehensive summary
+    7. Logs action to audit trail
+    8. Returns comprehensive summary
     
     Requirements:
     - Model must exist
@@ -289,6 +293,8 @@ def run_model_simulation(
         409: Model in incompatible state (deployed, blocked, etc)
         500: Simulation execution failed
     """
+    from app.services import audit_service
+    
     # Verify model exists and check state
     model = db.query(ModelRegistry).filter(ModelRegistry.id == model_id).first()
     if not model:
@@ -310,6 +316,29 @@ def run_model_simulation(
     
     try:
         result = simulation_service.run_simulation(model_id)
+        
+        # Log simulation to audit trail
+        try:
+            audit_service.log_governance_action(
+                db=db,
+                user_id=current_user.id,
+                model_id=model_id,
+                action="simulation_run",
+                action_status="success",
+                risk_score=result.get("final_risk_score"),
+                disparity_score=result.get("final_disparity_score"),
+                details={
+                    "prediction_logs_count": result.get("prediction_logs_count", 0),
+                    "risk_history_count": result.get("risk_history_count", 0),
+                    "drift_metrics_count": result.get("drift_metrics_count", 0),
+                    "fairness_metrics_count": result.get("fairness_metrics_count", 0),
+                    "message": result.get("message", "")
+                }
+            )
+        except Exception as audit_error:
+            # Log audit failure but don't block simulation result
+            logger.warning(f"Failed to log simulation audit entry: {str(audit_error)}")
+        
         return result
     except ValueError as e:
         raise HTTPException(

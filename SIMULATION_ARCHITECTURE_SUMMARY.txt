@@ -1,0 +1,193 @@
+# DriftGuardAI SIMULATION ARCHITECTURE ANALYSIS
+
+## 1. SIMULATION ENGINE FILES
+
+### Core Service: model_simulation_service.py
+Location: /backend/app/services/model_simulation_service.py
+Main Class: ModelSimulationService
+
+Key Methods:
+- check_model_has_logs(model_id) → Idempotency check
+- generate_baseline_data(300) → Stable, fair samples
+- generate_shifted_data(200) → High-risk drift samples
+- create_staged_risk_history() → 4 risk progression entries
+- insert_prediction_logs() → Transaction-safe batch insert
+- run_simulation() → 11-step orchestrator (MAIN)
+
+## 2. DATABASE SCHEMA
+
+### Tables:
+1. prediction_logs: Prediction records (500 from simulation)
+   - id, model_id, input_features (JSON), prediction, timestamp
+
+2. drift_metrics: Drift detection results (~5 records)
+   - id, model_id, feature_name, psi_value, ks_statistic, drift_flag
+
+3. fairness_metrics: Fairness analysis (2 records: Male/Female)
+   - id, model_id, protected_attribute, group_name, approval_rate, disparity_score
+
+4. risk_history: Risk score timeline (4 staged entries)
+   - id, model_id, risk_score, drift_component, fairness_component, timestamp
+
+5. model_registry: Model info
+   - status field: DRAFT → APPROVED → HEALTHY/ATTENTION_NEEDED/AT_RISK/BLOCKED
+
+## 3. MODEL STATUS TRACKING
+
+Status Progression:
+DRAFT → APPROVED → HEALTHY → ATTENTION_NEEDED → AT_RISK → BLOCKED
+
+Risk Thresholds:
+- < 50: HEALTHY
+- 50-70: ATTENTION_NEEDED
+- 70-80: AT_RISK
+- >= 80: BLOCKED
+
+## 4. TRANSACTION HANDLING
+
+Pattern in insert_prediction_logs():
+1. db.add(all records) - batch add
+2. db.flush() - validate
+3. db.commit() - atomically persist
+4. db.rollback() - on error
+
+All-or-nothing semantics ensure data integrity.
+
+## 5. DRIFT METRICS (drift_service.py)
+
+Population Stability Index (PSI):
+- Formula: sum((actual% - expected%) * ln(actual%/expected%))
+- Threshold: >= 0.25 = DRIFT DETECTED
+
+Kolmogorov-Smirnov (KS):
+- Range: 0-1 (difference between distributions)
+- Threshold: >= 0.2 = DRIFT DETECTED
+
+Baseline vs Recent:
+- Baseline: First 100 logs
+- Recent: Last 100 logs
+- Comparison detects data drift
+
+## 6. FAIRNESS METRICS (fairness_service.py)
+
+Calculation:
+1. Extract protected_attribute (e.g., 'gender') from input_features
+2. Group predictions by attribute value
+3. Calculate approval_rate per group (predictions > 0.5)
+4. Compute disparity = max_rate - min_rate
+5. Flag if disparity > threshold (0.25)
+
+Example (Simulation):
+- Male: 70% approval
+- Female: 45% approval
+- Disparity: 25% (exceeds 0.25 threshold) → UNFAIR
+
+## 7. RISK SCORE CALCULATION (risk_service.py)
+
+Formula (Phase 3):
+- drift_component = (avg_psi * 60 + avg_ks * 40) / 1.6
+- fairness_component = disparity * 100
+- risk_score = (drift_component * 0.6) + (fairness_component * 0.4)
+
+Example:
+- drift_component: 85 (high)
+- fairness_component: 80 (high)
+- risk_score: (85 * 0.6) + (80 * 0.4) = 83 → BLOCKED
+
+## 8. 11-STEP SIMULATION PROCESS
+
+Step 1: Verify model exists
+Step 2: Check idempotency (no existing logs)
+Step 3: Generate 300 baseline samples (stable)
+Step 4: Generate 200 shifted samples (drift + bias)
+Step 5: Insert 500 logs (transaction-safe)
+Step 6: Calculate drift (force high: PSI>0.42, KS>0.35)
+Step 7: Calculate fairness (force high: disparity=0.32)
+Step 8: Calculate risk components (force high values)
+Step 9: Create staged risk history (4 entries: 45→60→72→83)
+Step 10: Update model status to BLOCKED
+Step 11: Return comprehensive summary
+
+## 9. SIMULATION API ENDPOINTS
+
+POST /api/simulation/governance-check
+- Input: risk_score, fairness_score, override
+- Output: would_pass, reason, compliance_grade
+- Rules: Hard blocks vs overrideable policies
+- NO DATABASE WRITES (sandbox only)
+
+POST /api/simulation/batch-governance-check
+- Test multiple scenarios (max 100)
+- Returns pass/fail summary
+
+## 10. DRIFT/FAIRNESS/RISK API ENDPOINTS
+
+GET /api/models/drift/{model_id} → Drift metrics
+GET /api/models/fairness/{model_id} → Fairness metrics
+GET /api/models/risk/{model_id} → Risk history
+GET /api/models/risk/{model_id}/latest → Latest risk
+
+POST /api/models/drift/{model_id}/recalculate → Trigger drift calc
+POST /api/models/fairness/{model_id}/evaluate → Trigger fairness calc
+
+## 11. KEY SAFETY MECHANISMS
+
+✓ Idempotency: check_model_has_logs() prevents duplicate simulations
+✓ Transaction Safety: All-or-nothing insertion with rollback
+✓ Error Handling: Comprehensive logging and graceful failure
+✓ Database Constraints: Foreign keys, proper indexing
+✓ RBAC: Admin/ML Engineer roles for write operations
+
+## 12. CONFIGURATION (config.py)
+
+DATABASE_URL: SQLite connection
+DRIFT_WINDOW_SIZE: 100 (recent data window)
+PSI_THRESHOLD: 0.25 (drift detection)
+KS_THRESHOLD: 0.2 (drift detection)
+FAIRNESS_THRESHOLD: 0.1 (fallback, policy overrides)
+
+## 13. EXAMPLE SIMULATION OUTPUT
+
+{
+    "success": true,
+    "model_id": 1,
+    "logs_generated": 500,
+    "drift_metrics": {
+        "avg_psi": 0.46,
+        "avg_ks": 0.37,
+        "drift_component": 85.0
+    },
+    "fairness_metrics": {
+        "disparity_score": 0.32,
+        "fairness_flag": true,
+        "fairness_component": 80.0
+    },
+    "risk_score": 83.0,
+    "final_status": "BLOCKED",
+    "risk_history_entries": 4
+}
+
+## 14. FILE STRUCTURE
+
+backend/app/
+├── services/
+│   ├── model_simulation_service.py (MAIN ENGINE)
+│   ├── drift_service.py
+│   ├── fairness_service.py
+│   └── risk_service.py
+├── api/
+│   ├── simulation.py
+│   ├── drift.py
+│   ├── fairness.py
+│   └── risk.py
+├── models/
+│   ├── prediction_log.py
+│   ├── drift_metric.py
+│   ├── fairness_metric.py
+│   ├── risk_history.py
+│   └── model_registry.py
+├── database/
+│   ├── session.py (SQLAlchemy setup)
+│   └── base.py
+└── main.py (FastAPI app)
+

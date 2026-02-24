@@ -80,7 +80,12 @@ def get_baseline_data(db: Session, model_id: int, feature_name: str) -> np.ndarr
     baseline_values = []
     for log in baseline_logs:
         if feature_name in log.input_features:
-            baseline_values.append(float(log.input_features[feature_name]))
+            try:
+                # Try to convert to float (works for numeric features)
+                baseline_values.append(float(log.input_features[feature_name]))
+            except (ValueError, TypeError):
+                # Skip categorical features - they can't be used for PSI/KS
+                pass
         elif feature_name == "prediction":
             baseline_values.append(float(log.prediction))
     
@@ -104,7 +109,12 @@ def get_recent_data(db: Session, model_id: int, feature_name: str, window_size: 
     recent_values = []
     for log in recent_logs:
         if feature_name in log.input_features:
-            recent_values.append(float(log.input_features[feature_name]))
+            try:
+                # Try to convert to float (works for numeric features)
+                recent_values.append(float(log.input_features[feature_name]))
+            except (ValueError, TypeError):
+                # Skip categorical features - they can't be used for PSI/KS
+                pass
         elif feature_name == "prediction":
             recent_values.append(float(log.prediction))
     

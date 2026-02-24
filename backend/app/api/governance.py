@@ -8,6 +8,7 @@ from app.models.model_registry import ModelRegistry
 from app.models.governance_policy import GovernancePolicy
 from app.schemas.governance_policy import GovernancePolicyCreate, GovernancePolicyUpdate, GovernancePolicyResponse
 from app.services import governance_service
+from app.services import audit_service
 
 router = APIRouter(prefix="/governance/models", tags=["governance"])
 policy_router = APIRouter(prefix="/governance/policies", tags=["governance-policies"])
@@ -32,6 +33,28 @@ def evaluate_governance(
         )
     
     result = governance_service.evaluate_model_governance(db, model_id)
+    
+    # Log the governance evaluation
+    try:
+        audit_service.log_governance_action(
+            db=db,
+            user_id=current_user.id,
+            model_id=model_id,
+            action="governance_evaluate",
+            action_status="success",
+            risk_score=result.get("risk_score"),
+            disparity_score=result.get("disparity_score"),
+            governance_status=result.get("status"),
+            details={
+                "reason": result.get("reason")
+            }
+        )
+    except Exception as e:
+        # Log audit failure but don't block governance evaluation
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to log governance evaluation: {str(e)}")
+    
     return result
 
 
@@ -45,10 +68,13 @@ def deploy_model(
     """
     Deploy model after governance check
     
-    - If status == blocked → 403 Forbidden
+    - If status == blocked → 403 Forbidden (NO OVERRIDE ALLOWED)
     - If status == at_risk → requires override=true query param
     - If approved → sets status to deployed
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     model = db.query(ModelRegistry).filter(ModelRegistry.id == model_id).first()
     if not model:
         raise HTTPException(
@@ -59,17 +85,85 @@ def deploy_model(
     # Evaluate current governance status
     governance_result = governance_service.evaluate_model_governance(db, model_id)
     current_status = governance_result["status"]
+    risk_score = governance_result.get("risk_score", 0.0)
+    disparity_score = governance_result.get("disparity_score", 0.0)
     
+    logger.info(
+        f"Deployment requested for model {model_id} by user {current_user.id}: "
+        f"status={current_status}, override={override}, risk={risk_score}"
+    )
+    
+    # HARD BLOCK: Risk exceeds max threshold (NO OVERRIDE)
     if current_status == "blocked":
+        logger.warning(
+            f"Deployment BLOCKED for model {model_id}: {governance_result['reason']}"
+        )
+        
+        # Log blocked deployment attempt
+        try:
+            audit_service.log_governance_action(
+                db=db,
+                user_id=current_user.id,
+                model_id=model_id,
+                action="deployment",
+                action_status="blocked",
+                risk_score=risk_score,
+                disparity_score=disparity_score,
+                governance_status=current_status,
+                deployment_status="blocked",
+                override_used="no",
+                details={
+                    "reason": governance_result['reason'],
+                    "policy_violation": "hard_block"
+                }
+            )
+        except Exception as e:
+            logger.error(f"Failed to log blocked deployment: {str(e)}")
+        
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Deployment blocked: {governance_result['reason']}"
+            detail=f"Deployment blocked: {governance_result['reason']} (Override not permitted for hard blocks)"
         )
     
+    # SOFT GATE: Risk between approval and hard block (OVERRIDE ALLOWED)
     if current_status == "at_risk" and not override:
+        logger.warning(
+            f"Deployment at-risk for model {model_id}: {governance_result['reason']}"
+        )
+        
+        # Log at-risk deployment attempt without override
+        try:
+            audit_service.log_governance_action(
+                db=db,
+                user_id=current_user.id,
+                model_id=model_id,
+                action="deployment",
+                action_status="rejected",
+                risk_score=risk_score,
+                disparity_score=disparity_score,
+                governance_status=current_status,
+                deployment_status="blocked",
+                override_used="no",
+                details={
+                    "reason": governance_result['reason'],
+                    "policy_violation": "soft_gate"
+                }
+            )
+        except Exception as e:
+            logger.error(f"Failed to log at-risk deployment: {str(e)}")
+        
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Model at risk. {governance_result['reason']} Add ?override=true to override."
+        )
+    
+    # Determine override status
+    override_status = "no"
+    if override and current_status == "at_risk":
+        override_status = "yes"
+        logger.warning(
+            f"Deployment OVERRIDE used for model {model_id} by user {current_user.id} "
+            f"(status={current_status}, risk={risk_score})"
         )
     
     # Deploy model
@@ -78,10 +172,36 @@ def deploy_model(
     db.commit()
     db.refresh(model)
     
+    logger.info(
+        f"Model {model_id} deployed successfully by user {current_user.id} "
+        f"(override={override_status})"
+    )
+    
+    # Log successful deployment
+    try:
+        audit_service.log_governance_action(
+            db=db,
+            user_id=current_user.id,
+            model_id=model_id,
+            action="deployment",
+            action_status="success",
+            risk_score=risk_score,
+            disparity_score=disparity_score,
+            governance_status=current_status,
+            deployment_status="deployed",
+            override_used=override_status,
+            details={
+                "deployment_allowed_reason": "approved" if current_status == "approved" else "override_used"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to log successful deployment: {str(e)}")
+    
     return {
         "model_id": model_id,
         "status": "deployed",
-        "message": "Model deployed successfully"
+        "message": "Model deployed successfully",
+        "override_used": override_status == "yes"
     }
 
 

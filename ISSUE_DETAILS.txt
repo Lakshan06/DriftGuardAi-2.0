@@ -1,0 +1,232 @@
+================================================================================
+              DRIFTGUARDAI - DETAILED ISSUE BREAKDOWN BY FILE
+================================================================================
+
+FILE: src/services/api.ts
+================================================================================
+
+ISSUE 1: API Base URL Logging (Line 5)
+SEVERITY: MEDIUM
+console.log('API Base URL:', API_BASE_URL);
+PROBLEM: Exposes configuration in browser console
+FIX: Remove this line
+
+ISSUE 2: Request Header Logging with Authorization (Lines 22-26)
+SEVERITY: CRITICAL
+console.log('Request:', {
+  url: config.url,
+  method: config.method,
+  headers: config.headers,  // CONTAINS JWT TOKEN!
+});
+PROBLEM: Logs Authorization header with every request
+FIX: Don't log headers, or sanitize Authorization field
+
+ISSUE 3: Response Status Logging (Line 33)
+SEVERITY: MEDIUM
+console.log('Response:', response.status, response.data);
+PROBLEM: Verbose logging, not needed in production
+FIX: Remove or replace with DEBUG environment check
+
+ISSUE 4: Request/Response Logging on Every API Call (Lines 84, 89)
+SEVERITY: MEDIUM
+console.log('Attempting login with:', { email });
+console.log('Login response:', response.data);
+PROBLEM: Debug logging left in production
+FIX: Remove these lines
+
+ISSUE 5: Unsafe Fairness Data Access (Line 161)
+SEVERITY: HIGH
+let fairnessData = Array.isArray(response.data) ? response.data : (response.data.metrics || []);
+PROBLEM: Accesses .metrics without null check on response.data
+FIX: Use optional chaining: response?.data?.metrics || []
+
+================================================================================
+
+FILE: src/services/dashboardAPI.ts
+================================================================================
+
+ISSUE 1-7: Console.log on Every Method (Lines 6, 12, 18, 24, 29, 40, 52)
+SEVERITY: MEDIUM
+Pattern: console.log('Fetching...')
+PROBLEM: 7 console.log statements, one per API method
+FIX: Remove all 7 statements
+
+================================================================================
+
+FILE: src/pages/LoginPage.tsx
+================================================================================
+
+ISSUE 1: Login Flow Logging (Line 38)
+SEVERITY: MEDIUM
+console.log('Starting login process...');
+FIX: Remove
+
+ISSUE 2: Response Data Logging (Line 47)
+SEVERITY: MEDIUM
+console.log('Login response data:', data);
+FIX: Remove
+
+ISSUE 3: CRITICAL - Token Logging (Line 67)
+SEVERITY: CRITICAL
+console.log('Token received:', token.substring(0, 20) + '...');
+PROBLEM: Logs JWT token even if truncated - security vulnerability!
+FIX: Replace with: console.log('Token received: [SECURED]');
+
+ISSUE 4: More Token/Email Logging (Lines 68, 75, 76, 81)
+SEVERITY: MEDIUM
+console.log('User email:', userEmail);
+console.log('Token stored in localStorage');
+console.log('Calling onLogin...');
+console.log('Navigating to dashboard...');
+FIX: Remove all
+
+================================================================================
+
+FILE: src/pages/DashboardPage.tsx
+================================================================================
+
+ISSUE 1: Auth Token Validation Logging (Lines 40-41)
+SEVERITY: MEDIUM
+console.warn('No token found - redirecting to login');
+FIX: Can keep if truly needed, but remove debug logs
+
+ISSUE 2: Error Logging (Line 51)
+SEVERITY: LOW
+console.error('Error fetching models:', err);
+FIX: Keep - error logging is appropriate
+
+ISSUE 3: Auth Error Logging (Line 59)
+SEVERITY: LOW
+console.warn('Authentication error - clearing token and redirecting');
+FIX: Keep - auth errors are important
+
+ISSUE 4: Unsafe Response Data Access (Line 47)
+SEVERITY: HIGH
+const modelsList = response.data.items || response.data.models || response.data || [];
+FIX: Add null check: response?.data?.items || response?.data?.models || []
+
+================================================================================
+
+FILE: src/pages/GovernancePage.tsx
+================================================================================
+
+ISSUE 1: Unsafe Response Data Access (Line 49)
+SEVERITY: HIGH
+const modelsList = modelsRes.data.items || modelsRes.data.models || modelsRes.data || [];
+FIX: Add null check on response.data first
+
+================================================================================
+
+FILE: src/pages/AuditPage.tsx
+================================================================================
+
+ISSUE 1: Promise.all Without Error Isolation (Lines 39-41)
+SEVERITY: HIGH
+const [deploymentsRes, auditRes] = await Promise.all([
+  auditAPI.getDeploymentHistory(),
+  auditAPI.getAuditTrail(),
+]);
+PROBLEM: If either fails, entire Promise.all fails
+FIX: Use Promise.allSettled for better error handling
+
+ISSUE 2: Unsafe Data Access (Lines 43-44)
+SEVERITY: MEDIUM
+setDeploymentHistory(deploymentsRes.data.deployments || []);
+setAuditTrail(auditRes.data.trail || []);
+FIX: Add null check on .data: deploymentsRes?.data?.deployments || []
+
+================================================================================
+
+FILE: src/pages/ModelDetailPage.tsx
+================================================================================
+
+ISSUE 1: Simulation Status Logging (Line 105)
+SEVERITY: MEDIUM
+console.log('Simulation status:', response.data);
+FIX: Remove
+
+ISSUE 2: Data Loading Logging (Lines 142, 162, 182)
+SEVERITY: MEDIUM
+console.log(`Loaded ${validRiskHistory.length} risk history entries`);
+FIX: Remove or replace with DEBUG flag
+
+ISSUE 3: CRITICAL - Promise.all Without Error Isolation (Lines 118-123)
+SEVERITY: CRITICAL
+const [modelRes, riskRes, driftRes, fairnessRes] = await Promise.all([
+  modelAPI.getModelById(modelId!),
+  modelAPI.getModelRiskHistory(modelId!),
+  modelAPI.getModelDrift(modelId!),
+  modelAPI.getModelFairness(modelId!),
+]);
+PROBLEM: If ANY API call fails, entire component fails to load
+FIX: Use Promise.allSettled and handle each result individually
+
+ISSUE 4: CRITICAL - Unhandled fetch() Promise (Lines 222-227)
+SEVERITY: CRITICAL
+const response = await fetch(url, {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+if (response.ok) {
+  const data = await response.json();  // NOT WRAPPED IN TRY-CATCH!
+  if (data && typeof data === 'object') {
+    setAiExplanation(data);
+  }
+}
+PROBLEM: response.json() can throw and crash component
+FIX: Wrap entire block in try-catch
+
+ISSUE 5: Unsafe Optional Error Handling (Line 108)
+SEVERITY: MEDIUM
+catch (err: any) {
+  console.warn('Failed to fetch simulation status:', err.message);
+  // Not critical, continue without status
+}
+PROBLEM: Silently fails, user doesn't know
+FIX: Could add telemetry or non-intrusive notification
+
+ISSUE 6: MEDIUM - Excessive State Updates (Lines 303-337)
+SEVERITY: MEDIUM
+handleRunSimulation: 6+ state updates:
+  - setRunningSimulation(true)
+  - setSimulationResult(null)
+  - setError('')
+  - setSimulationResult(response.data)
+  - setShowSimulationConfirm(false)
+  - Plus nested fetchModelData() and fetchSimulationStatus()
+  - Finally: setRunningSimulation(false)
+PROBLEM: Multiple re-renders, possible race conditions
+FIX: Use useReducer or batch updates
+
+ISSUE 7: Simulation Logging (Lines 313-316, 324-326, 352, 359)
+SEVERITY: MEDIUM
+console.log('Starting simulation for model:', modelId);
+console.log('Simulation response:', response.data);
+console.log('Auto-refreshing data after simulation...');
+console.log('Resetting simulation for model:', modelId);
+console.log('Reset completed:', response.data);
+FIX: Remove all simulation debug logs
+
+================================================================================
+
+FILE: src/pages/CommandCenterPage.tsx
+================================================================================
+
+ISSUE 1: Missing useCallback on loadDashboard
+SEVERITY: MEDIUM
+useEffect(() => {
+  loadDashboard();
+}, [timeRange]);
+
+const loadDashboard = async () => {  // Function recreated every render!
+  // ...
+};
+PROBLEM: Function recreated on every render, not in useEffect deps
+FIX: Wrap with useCallback(async () => {...}, [timeRange])
+
+================================================================================
+
+FILE: src/components/Comman
