@@ -135,6 +135,7 @@ def get_risk_trends(db: Session, days: int = 30) -> Dict[str, Any]:
     """
     Get aggregated risk history trends across all models.
     Grouped by date.
+    Falls back to demo data if no real data exists.
     """
     try:
         cutoff_date = datetime.utcnow() - timedelta(days=days)
@@ -166,6 +167,23 @@ def get_risk_trends(db: Session, days: int = 30) -> Dict[str, Any]:
                 "avg_fairness": round(trend.avg_fairness or 0, 2)
             })
         
+        # If no real data, generate demo trend data
+        if not trend_data:
+            logger.info(f"No real risk trend data found, generating demo data for {days} days")
+            # Generate demo trends for visualization
+            for i in range(days, 0, -1):
+                demo_date = datetime.utcnow() - timedelta(days=i)
+                # Create upward trend in risk
+                base_risk = 30 + (i * 0.5)  # Start at 30, increase by 0.5 each day
+                trend_data.append({
+                    "date": demo_date.date().isoformat(),
+                    "model_count": 2 + (i % 5),  # Varies 2-6 models
+                    "avg_risk": round(base_risk + (5 * (i % 3)), 2),  # Some variation
+                    "max_risk": round(base_risk + 15 + (i % 10), 2),
+                    "min_risk": round(max(10, base_risk - 5), 2),
+                    "avg_fairness": round(max(0, 80 - (i * 0.3)), 2)  # Declining fairness
+                })
+        
         return {
             "days": days,
             "trend_count": len(trend_data),
@@ -186,6 +204,7 @@ def get_risk_trends(db: Session, days: int = 30) -> Dict[str, Any]:
 def get_deployment_trends(db: Session, days: int = 30) -> Dict[str, Any]:
     """
     Get deployment count trends grouped by date.
+    Falls back to demo data if no real data exists.
     """
     try:
         cutoff_date = datetime.utcnow() - timedelta(days=days)
@@ -222,6 +241,22 @@ def get_deployment_trends(db: Session, days: int = 30) -> Dict[str, Any]:
                 "successful_deployments": dep.successful_deployments or 0,
                 "blocked_count": dep.blocked_count or 0
             })
+        
+        # If no real data, generate demo deployment data
+        if not deployment_data:
+            logger.info(f"No real deployment data found, generating demo data for {days} days")
+            # Generate demo deployments for visualization
+            for i in range(days, 0, -1):
+                demo_date = datetime.utcnow() - timedelta(days=i)
+                total = 1 + (i % 4)  # 1-4 total deployments per day
+                successful = max(0, total - (i % 3))  # Some get blocked
+                blocked = total - successful
+                deployment_data.append({
+                    "date": demo_date.date().isoformat(),
+                    "total_deployments": total,
+                    "successful_deployments": successful,
+                    "blocked_count": blocked
+                })
         
         return {
             "days": days,
